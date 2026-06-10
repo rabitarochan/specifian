@@ -1,0 +1,74 @@
+---
+title: ユーザー API
+description: ユーザー管理・認証関連のエンドポイント
+endpoint:
+  method: GET
+  path: /api/users
+  description: ユーザー一覧を取得する
+  params:
+    - { name: page, type: integer, required: false, description: "ページ番号（デフォルト: 1）" }
+    - { name: limit, type: integer, required: false, description: "1 ページあたりの件数（デフォルト: 20）" }
+    - { name: role, type: string, required: false, description: ロールでフィルタリング }
+---
+
+# {title}
+
+ユーザー情報の取得・作成・更新を行う API。
+
+<DataView data={data.endpoint} />
+
+## リクエスト例
+
+```bash
+GET /api/users?page=1&limit=20&role=member
+Authorization: Bearer <token>
+```
+
+## レスポンス例
+
+| ステータスコード | 説明 |
+|---|---|
+| 200 | 取得成功 |
+| 400 | パラメータが不正 |
+| 401 | 認証が必要 |
+| 500 | サーバーエラー |
+
+### 200 OK
+
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "email": "user@example.com",
+      "name": "User Name",
+      "role": "member",
+      "created_at": "2026-01-01T12:00:00Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 100
+  }
+}
+```
+
+### 401 Unauthorized
+
+```json
+{
+  "error": "Invalid or missing authentication token"
+}
+```
+
+## 設計メモ
+
+- 認証には Bearer トークンを使用します
+- ページネーション必須で、大量のデータ取得を防いでいます
+- role パラメータでのフィルタリングをサポートしています
+
+## 関連スペック
+
+- [[tables:users]] — ユーザーテーブル定義
+- [[api:_]] — API 仕様一覧
