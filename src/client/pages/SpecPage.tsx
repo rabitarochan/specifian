@@ -11,6 +11,7 @@ import { useSearchParams } from 'react-router-dom';
 import type { SpecDetail, FsEvent } from '@shared/types';
 import { fetchSpec, saveSpec, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
+import { useValidation } from '../components/ValidationProvider';
 import { useToast } from '../components/Toast';
 import { useDebounced } from '../hooks/useDebounced';
 import { MdxRenderer } from '../components/MdxRenderer';
@@ -25,6 +26,7 @@ interface Props {
 
 export function SpecPage({ category, slug, specId }: Props) {
   const { specs, onFsEvent } = useSpecs();
+  const { issuesBySpecId } = useValidation();
   const { show } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -139,6 +141,7 @@ export function SpecPage({ category, slug, specId }: Props) {
   if (!detail) return <div className="sb-loading">読み込み中…</div>;
 
   const previewContent = editing ? debouncedText : detail.content;
+  const issues = issuesBySpecId[specId] ?? [];
 
   return (
     <div className="sb-spec-page">
@@ -168,6 +171,21 @@ export function SpecPage({ category, slug, specId }: Props) {
           </button>
         </div>
       </header>
+
+      {issues.length > 0 && (
+        <div className="sb-validation-banner" role="alert">
+          <strong className="sb-validation-banner__title">
+            スキーマ違反 ({issues.length}件)
+          </strong>
+          <ul className="sb-validation-banner__list">
+            {issues.map((issue, i) => (
+              <li key={`${issue.path}:${i}`}>
+                <code>{issue.path}</code>: {issue.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {externalChange && (
         <div className="sb-banner" role="status">

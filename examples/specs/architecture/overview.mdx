@@ -1,0 +1,45 @@
+---
+title: システム構成図
+description: specbook サンプルプロジェクトの全体構成
+---
+
+# システム構成図
+
+サンプルプロジェクトは、フロントエンド（ブラウザー）、バックエンド API サーバー、データベースの 3 層構成です。
+
+## システムレイアウト
+
+```mermaid
+graph TD
+    A["ブラウザー<br/>(React UI)"]
+    B["API サーバー<br/>(Express)"]
+    C["データベース<br/>(PostgreSQL)"]
+    
+    A -->|HTTP/REST| B
+    B -->|SQL| C
+```
+
+## ER 図
+
+テーブル間の関連を示します。users テーブルと posts テーブルの 1 対多の関係です。
+
+```mermaid
+erDiagram
+    USERS ||--o{ POSTS : "投稿する"
+    USERS {
+        bigint id PK
+        string email UK
+        string name
+    }
+    POSTS {
+        bigint id PK
+        bigint user_id FK
+        string title
+    }
+```
+
+## 関連スペック
+
+- [[tables:users]] — ユーザーテーブル定義
+- [[tables:posts]] — 投稿テーブル定義
+- [[api:users-api]] — ユーザー管理 API

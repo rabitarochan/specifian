@@ -86,8 +86,10 @@ async function scanDir(
     const fullPath = path.join(dir, entry.name);
 
     if (entry.isDirectory()) {
-      // Skip _generators at the top level of specsDir
-      if (dir === specsDir && entry.name === '_generators') continue;
+      // Skip _generators / _components at the top level of specsDir
+      if (dir === specsDir && (entry.name === '_generators' || entry.name === '_components')) {
+        continue;
+      }
       await scanDir(specsDir, fullPath, results);
     } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
       try {

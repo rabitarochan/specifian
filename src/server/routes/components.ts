@@ -1,0 +1,50 @@
+import { Router, type Request, type Response } from 'express';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import type { UserComponentFile } from '../../shared/types.js';
+
+function normalizePath(p: string): string {
+  return p.split(path.sep).join('/');
+}
+
+/**
+ * GET /api/components
+ * specs/_components/ 直下 (非再帰) の .tsx / .jsx を走査し UserComponentFile[] を返す。
+ * ディレクトリーが無ければ空配列。
+ */
+export function componentsRouter(specsDir: string): Router {
+  const router = Router();
+
+  router.get('/', async (_req: Request, res: Response) => {
+    const dir = path.join(specsDir, '_components');
+    try {
+      const entries = await fs.readdir(dir, { withFileTypes: true }).catch((err: NodeJS.ErrnoException) => {
+        if (err.code === 'ENOENT') return null;
+        throw err;
+      });
+      if (entries === null) {
+        res.json([] as UserComponentFile[]);
+        return;
+      }
+
+      const files: UserComponentFile[] = [];
+      for (const entry of entries) {
+        if (!entry.isFile()) continue;
+        if (!/\.(tsx|jsx)$/.test(entry.name)) continue;
+        const abs = path.join(dir, entry.name);
+        const source = await fs.readFile(abs, 'utf-8');
+        files.push({
+          path: normalizePath(path.relative(specsDir, abs)),
+          source,
+        });
+      }
+      // 安定した順序にする (名前順)
+      files.sort((a, b) => a.path.localeCompare(b.path));
+      res.json(files);
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  return router;
+}

@@ -11,6 +11,8 @@ import type {
   Graph,
   GenerateRequest,
   GenerateResponse,
+  SearchResult,
+  ValidationReport,
   ApiError,
 } from '@shared/types';
 
@@ -131,4 +133,16 @@ export function generate(body: GenerateRequest): Promise<GenerateResponse> {
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/** GET /api/search?q=&limit= — 全文検索。q が空なら即 [] を返す */
+export function searchSpecs(q: string, limit = 20): Promise<SearchResult[]> {
+  if (!q.trim()) return Promise.resolve([]);
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  return request<SearchResult[]>(`/api/search?${params.toString()}`);
+}
+
+/** GET /api/validation — front-matter スキーマ違反一覧 */
+export function fetchValidation(): Promise<ValidationReport> {
+  return request<ValidationReport>('/api/validation');
 }

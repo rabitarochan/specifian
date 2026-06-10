@@ -5,6 +5,7 @@ import { startServer } from '../server/app.js';
 import { initSpecs } from '../server/init.js';
 import { loadSpecs } from '../server/store.js';
 import { runGenerator } from '../server/generate.js';
+import { validateSpecs } from '../server/validate.js';
 
 const VERSION = '0.1.0';
 
@@ -117,5 +118,42 @@ program
       }
     },
   );
+
+// validate command
+program
+  .command('validate')
+  .description('front-matter をスキーマに対してバリデーションします')
+  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
+  .action(async (opts: { dir: string }) => {
+    const specsDir = path.resolve(opts.dir);
+
+    if (!fs.existsSync(specsDir)) {
+      console.error(
+        `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+      );
+      process.exit(1);
+    }
+
+    try {
+      const report = await validateSpecs(specsDir);
+
+      if (report.issues.length === 0) {
+        console.log('✅ front-matter はすべてのスキーマに適合しています');
+        process.exit(0);
+      } else {
+        console.error(`❌ スキーマ違反が ${report.issues.length} 件見つかりました:`);
+        for (const issue of report.issues) {
+          console.error(`  ${issue.specId} ${issue.path}: ${issue.message}`);
+        }
+        process.exit(1);
+      }
+    } catch (err) {
+      console.error(
+        'バリデーションに失敗しました:',
+        err instanceof Error ? err.message : err,
+      );
+      process.exit(1);
+    }
+  });
 
 program.parse(process.argv);

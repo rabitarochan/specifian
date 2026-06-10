@@ -41,9 +41,14 @@ export function startWatcher(specsDir: string, wss: WebSocketServer): () => void
   function handler(event: 'add' | 'change' | 'unlink') {
     return (filePath: string) => {
       const rel = normalizePath(path.relative(specsDir, filePath));
-      if (!/\.mdx?$/.test(rel)) return;
 
-      const specId = pathToSpecId(specsDir, filePath);
+      // ユーザー定義コンポーネント (_components/*.tsx|jsx) も通知する (specId: null)。
+      const isUserComponent =
+        rel.startsWith('_components/') && /\.(tsx|jsx)$/.test(rel);
+
+      if (!/\.mdx?$/.test(rel) && !isUserComponent) return;
+
+      const specId = isUserComponent ? null : pathToSpecId(specsDir, filePath);
       const msg: FsEvent = {
         type: 'fs',
         event,
