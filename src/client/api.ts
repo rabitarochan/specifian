@@ -13,6 +13,7 @@ import type {
   GenerateResponse,
   SearchResult,
   ValidationReport,
+  CategorySchemaResponse,
   ApiError,
 } from '@shared/types';
 
@@ -145,4 +146,11 @@ export function searchSpecs(q: string, limit = 20): Promise<SearchResult[]> {
 /** GET /api/validation — front-matter スキーマ違反一覧 */
 export function fetchValidation(): Promise<ValidationReport> {
   return request<ValidationReport>('/api/validation');
+}
+
+/** GET /api/schema/<category> — カテゴリーの _schema.json (無ければ schema: null) */
+export function fetchCategorySchema(
+  category: string,
+): Promise<CategorySchemaResponse> {
+  return request<CategorySchemaResponse>(`/api/schema/${category}`);
 }

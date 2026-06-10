@@ -188,7 +188,43 @@ specbook generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 - CLI: `specbook validate [--dir]` — 違反があれば一覧表示して exit code 1 (CI 組み込み用)
 - UI: サイドバーのスペック行に警告バッジ、スペックページ上部に違反一覧バナー
 
-## 将来拡張 (v3 候補)
+## v3 機能設計: front-matter の GUI フォーム編集
 
-- front-matter の GUI フォーム編集 (スキーマからフォーム生成)
+### コンセプト
+
+編集モードの左ペインに **[テキスト] / [フォーム]** タブを追加する。
+フォームはカテゴリーの `_schema.json` (JSON Schema) から自動生成し、スキーマが無い場合は現在の front-matter データから擬似スキーマを推論する。
+フォームが書き換えるのは front-matter の YAML 部分のみ。本文は [テキスト] タブで編集する。
+**単一のソース・オブ・トゥルースは編集中のテキスト**: フォーム変更 → YAML 再シリアライズ → テキストへ反映 (dirty / Ctrl+S 保存 / ライブプレビューは既存フローのまま動く)。
+
+### サーバー
+
+- `GET /api/schema/<categoryPath>` → `{ schema: <JSON> | null }` (`_schema.json` が無ければ null。404 にしない)
+- validate.ts のスキーマ探索ロジックを共有ヘルパー化して再利用
+
+### クライアント (src/client/form/)
+
+- `schemaTypes.ts` — 扱う JSON Schema サブセットの構造型 (固定契約)
+- `yamlSync.ts` — `splitFrontMatter(content)` / `replaceFrontMatter(content, data)`。
+  `yaml` パッケージで parse/stringify。キー順は挿入順で安定。YAML コメント・独自整形はフォーム編集時に正規化される (既知の制限として README に記載)
+- `infer.ts` — `inferSchema(data)`: スキーマが無い場合に値から型推論 (string/number/boolean/object/array)
+- `SchemaForm.tsx` + フィールド群 — スキーマ駆動の再帰フォームレンダラー:
+  - string → テキスト入力 (enum があれば select)
+  - number / integer → 数値入力、boolean → チェックボックス
+  - object → ネストした fieldset (再帰)
+  - **array of object → 行の追加・削除・並べ替えができるテーブル UI** (テーブルのカラム定義編集が主役ユースケース)
+  - array of scalar → 追加・削除できる行リスト
+  - schema の `title` / `description` をラベル・ヘルプ文に、`required` は * マーク表示
+  - スキーマに無い既存キーは「スキーマ外のフィールド」として汎用編集 (推論フォーム) で保持し、消さない
+- バリデーション: クライアントは required / 型の軽量チェックのみ (本検証はサーバーの ajv = 既存 ValidationProvider)
+
+### SpecPage 統合
+
+- 編集モードの左ペイン上部にタブ [テキスト] [フォーム]
+- フォームタブへの切り替え時に現在テキストを parse。YAML が壊れている場合はエラーメッセージを出してテキストタブに留まる
+- フォーム変更のたびに `replaceFrontMatter` でテキストを更新 → 既存のデバウンスプレビューが追従
+
+## 将来拡張 (v4 候補)
+
 - 全文検索のインデックス化 (大規模 specs 向け)、Mermaid テーマ設定
+- フォームのカスタムウィジェット (`x-widget` 拡張)
