@@ -4,6 +4,64 @@ import Ajv from 'ajv';
 import { loadSpecs } from './store.js';
 import type { ValidationIssue, ValidationReport } from '../shared/types.js';
 
+/** loadCategorySchema の戻り値 */
+export interface CategorySchemaResult {
+  /** パースに成功したスキーマオブジェクト。_schema.json が存在しない場合は null */
+  schema: Record<string, unknown> | null;
+  /**
+   * ファイルの読み込みまたは JSON パースに失敗した場合のエラーメッセージ。
+   * schema が null かつ error が undefined の場合は ENOENT (ファイルなし) を意味する。
+   */
+  error?: string;
+}
+
+/**
+ * specsDir/<category>/_schema.json を読み込んで返す共有ヘルパー。
+ * - category が '' のときは specsDir 直下の _schema.json を参照する。
+ * - ファイルが存在しない (ENOENT) → { schema: null }
+ * - 読み込み失敗または JSON パース失敗 → { schema: null, error: <メッセージ> }
+ */
+export async function loadCategorySchema(
+  specsDir: string,
+  category: string,
+): Promise<CategorySchemaResult> {
+  const segments = category === '' ? [] : category.split('/');
+  const schemaPath = path.join(specsDir, ...segments, '_schema.json');
+
+  let schemaText: string;
+  try {
+    schemaText = await fs.readFile(schemaPath, 'utf-8');
+  } catch (err) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') {
+      return { schema: null };
+    }
+    return {
+      schema: null,
+      error: `_schema.json を読み込めませんでした: ${String(err)}`,
+    };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(schemaText);
+  } catch (err) {
+    return {
+      schema: null,
+      error: `_schema.json の JSON パースに失敗しました: ${String(err)}`,
+    };
+  }
+
+  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    return {
+      schema: null,
+      error: '_schema.json はオブジェクトである必要があります',
+    };
+  }
+
+  return { schema: parsed as Record<string, unknown> };
+}
+
 /**
  * Validate front-matter data of all normal specs (excluding _ and _template)
  * against _schema.json files found in each category directory.
@@ -37,37 +95,28 @@ export async function validateSpecs(specsDir: string): Promise<ValidationReport>
   const compiledSchemas = new Map<string, ReturnType<Ajv['compile']> | null>();
 
   for (const category of categoriesWithSchema) {
-    const schemaPath = path.join(specsDir, ...category.split('/'), '_schema.json');
     const schemaSpecId = `${category}:_schema`;
 
-    let schemaText: string;
-    try {
-      schemaText = await fs.readFile(schemaPath, 'utf-8');
-    } catch (err) {
+    const result = await loadCategorySchema(specsDir, category);
+
+    if (result.error !== undefined) {
       issues.push({
         specId: schemaSpecId,
         path: '/',
-        message: `_schema.json を読み込めませんでした: ${String(err)}`,
+        message: result.error,
       });
       compiledSchemas.set(category, null);
       continue;
     }
 
-    let schemaJson: unknown;
-    try {
-      schemaJson = JSON.parse(schemaText);
-    } catch (err) {
-      issues.push({
-        specId: schemaSpecId,
-        path: '/',
-        message: `_schema.json の JSON パースに失敗しました: ${String(err)}`,
-      });
+    if (result.schema === null) {
+      // ENOENT — should not normally happen since we checked access above, skip silently
       compiledSchemas.set(category, null);
       continue;
     }
 
     try {
-      const validate = ajv.compile(schemaJson as object);
+      const validate = ajv.compile(result.schema);
       compiledSchemas.set(category, validate);
     } catch (err) {
       issues.push({

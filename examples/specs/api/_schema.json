@@ -1,0 +1,77 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "API 定義スキーマ",
+  "description": "API エンドポイントの仕様を定義するスキーマ",
+  "type": "object",
+  "required": ["title", "endpoint"],
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "タイトル",
+      "description": "API のタイトル"
+    },
+    "description": {
+      "type": "string",
+      "title": "説明",
+      "description": "API の説明"
+    },
+    "endpoint": {
+      "type": "object",
+      "title": "エンドポイント",
+      "description": "API エンドポイント定義",
+      "required": ["method", "path"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "title": "メソッド",
+          "description": "HTTP メソッド",
+          "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
+        },
+        "path": {
+          "type": "string",
+          "title": "パス",
+          "description": "エンドポイントパス"
+        },
+        "description": {
+          "type": "string",
+          "title": "説明",
+          "description": "エンドポイントの説明"
+        },
+        "params": {
+          "type": "array",
+          "title": "パラメータ",
+          "description": "クエリパラメータやリクエストボディのパラメータ",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "パラメータ名",
+                "description": "パラメータ名"
+              },
+              "type": {
+                "type": "string",
+                "title": "型",
+                "description": "パラメータの型（string、integer、boolean など）"
+              },
+              "required": {
+                "type": "boolean",
+                "title": "必須",
+                "description": "必須パラメータかどうか"
+              },
+              "description": {
+                "type": "string",
+                "title": "説明",
+                "description": "パラメータの説明"
+              }
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

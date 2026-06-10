@@ -9,13 +9,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import type { SpecDetail, FsEvent } from '@shared/types';
-import { fetchSpec, saveSpec, ApiHttpError } from '../api';
+import { fetchSpec, saveSpec, fetchCategorySchema, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
 import { useValidation } from '../components/ValidationProvider';
 import { useToast } from '../components/Toast';
 import { useDebounced } from '../hooks/useDebounced';
 import { MdxRenderer } from '../components/MdxRenderer';
 import { Editor } from '../components/Editor';
+import { SchemaForm } from '../form/SchemaForm';
+import type { JsonSchema } from '../form/schemaTypes';
+import { splitFrontMatter, replaceFrontMatter } from '../form/yamlSync';
+import { inferSchema } from '../form/infer';
+
+type EditTab = 'text' | 'form';
 
 interface Props {
   category: string;
@@ -35,6 +41,10 @@ export function SpecPage({ category, slug, specId }: Props) {
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [externalChange, setExternalChange] = useState(false);
+  const [editTab, setEditTab] = useState<EditTab>('text');
+  // カテゴリーごとの _schema.json キャッシュ (null = スキーマ無し)
+  const [categorySchema, setCategorySchema] = useState<JsonSchema | null>(null);
+  const [schemaCategory, setSchemaCategory] = useState<string | null>(null);
 
   const editing = searchParams.get('edit') === '1';
   const dirty = detail !== null && text !== detail.content;
@@ -107,7 +117,7 @@ export function SpecPage({ category, slug, specId }: Props) {
     }
   }, [detail, saving, category, slug, text, show]);
 
-  // Ctrl+S 保存 (編集モードのみ)
+  // Ctrl+S 保存 (編集モードのみ・テキスト/フォーム両タブで有効)
   useEffect(() => {
     if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
@@ -119,6 +129,31 @@ export function SpecPage({ category, slug, specId }: Props) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [editing, doSave]);
+
+  // カテゴリーの _schema.json を一度だけ取得してキャッシュする
+  useEffect(() => {
+    if (!editing || editTab !== 'form') return;
+    if (schemaCategory === category) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetchCategorySchema(category);
+        if (cancelled) return;
+        setCategorySchema(
+          res.schema ? (res.schema as JsonSchema) : null,
+        );
+        setSchemaCategory(category);
+      } catch {
+        if (cancelled) return;
+        // 取得失敗時は推論スキーマにフォールバックする
+        setCategorySchema(null);
+        setSchemaCategory(category);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editing, editTab, category, schemaCategory]);
 
   const setEditing = (on: boolean) => {
     const next = new URLSearchParams(searchParams);
@@ -199,7 +234,37 @@ export function SpecPage({ category, slug, specId }: Props) {
       {editing ? (
         <div className="sb-split">
           <div className="sb-split__editor">
-            <Editor value={text} onChange={setText} />
+            <div className="sb-edit-tabs" role="tablist" aria-label="編集モード">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={editTab === 'text'}
+                className={`sb-edit-tab${editTab === 'text' ? ' sb-edit-tab--active' : ''}`}
+                onClick={() => setEditTab('text')}
+              >
+                テキスト
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={editTab === 'form'}
+                className={`sb-edit-tab${editTab === 'form' ? ' sb-edit-tab--active' : ''}`}
+                onClick={() => setEditTab('form')}
+              >
+                フォーム
+              </button>
+            </div>
+            <div className="sb-edit-pane">
+              {editTab === 'text' ? (
+                <Editor value={text} onChange={setText} />
+              ) : (
+                <FormPane
+                  text={text}
+                  categorySchema={categorySchema}
+                  onChange={setText}
+                />
+              )}
+            </div>
           </div>
           <div className="sb-split__preview">
             <article className="sb-content sb-content--preview">
@@ -222,6 +287,52 @@ export function SpecPage({ category, slug, specId }: Props) {
           />
         </article>
       )}
+    </div>
+  );
+}
+
+/**
+ * フォームタブの中身。現在のテキストから front-matter を parse し、
+ * - 解析エラー → エラーボックスを表示
+ * - 成功 → SchemaForm を描画 (schema = カテゴリースキーマ ?? 推論)
+ * フォーム変更は replaceFrontMatter でテキストへ書き戻し、同じ text state を更新する
+ * (dirty / Ctrl+S / ライブプレビューは既存フローのまま動く)。
+ */
+function FormPane({
+  text,
+  categorySchema,
+  onChange,
+}: {
+  text: string;
+  categorySchema: JsonSchema | null;
+  onChange: (next: string) => void;
+}) {
+  const parts = splitFrontMatter(text);
+
+  if (parts.error) {
+    return (
+      <div className="sb-form-pane">
+        <div className="sb-error-panel" role="alert">
+          <div className="sb-error-panel__title">フォームを表示できません</div>
+          <div className="sb-error-panel__message">
+            front-matter の YAML を解析できません: {parts.error}。
+            テキストタブで修正してください。
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const data = parts.data;
+  const schema: JsonSchema = categorySchema ?? inferSchema(data);
+
+  const handleChange = (next: Record<string, unknown>): void => {
+    onChange(replaceFrontMatter(text, next));
+  };
+
+  return (
+    <div className="sb-form-pane">
+      <SchemaForm schema={schema} value={data} onChange={handleChange} />
     </div>
   );
 }

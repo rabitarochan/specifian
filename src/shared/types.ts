@@ -141,6 +141,11 @@ export interface UserComponentFile {
   source: string;
 }
 
+/** GET /api/schema/<category> のレスポンス。_schema.json が無いカテゴリーは schema: null */
+export interface CategorySchemaResponse {
+  schema: Record<string, unknown> | null;
+}
+
 /** wiki リンク抽出用正規表現 (コードフェンス/インラインコード内の除外は呼び出し側で行う) */
 export const WIKILINK_PATTERN = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
 

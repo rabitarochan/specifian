@@ -7,27 +7,33 @@
   "properties": {
     "title": {
       "type": "string",
+      "title": "タイトル",
       "description": "テーブルのタイトル"
     },
     "description": {
       "type": "string",
+      "title": "説明",
       "description": "テーブルの説明"
     },
     "table": {
       "type": "object",
+      "title": "テーブル定義",
       "description": "テーブル定義",
       "required": ["name", "columns"],
       "properties": {
         "name": {
           "type": "string",
+          "title": "テーブル名",
           "description": "テーブル名（データベース側の実際の名前）"
         },
         "description": {
           "type": "string",
+          "title": "テーブルの説明",
           "description": "テーブルの詳細説明"
         },
         "columns": {
           "type": "array",
+          "title": "カラム",
           "minItems": 1,
           "description": "カラムリスト",
           "items": {
@@ -36,26 +42,32 @@
             "properties": {
               "name": {
                 "type": "string",
+                "title": "カラム名",
                 "description": "カラム名"
               },
               "type": {
                 "type": "string",
+                "title": "型",
                 "description": "データ型（bigint、varchar など）"
               },
               "nullable": {
                 "type": "boolean",
+                "title": "NULL 許可",
                 "description": "NULL を許可するか"
               },
               "primaryKey": {
                 "type": "boolean",
+                "title": "主キー",
                 "description": "主キーであるか"
               },
               "default": {
                 "type": "string",
+                "title": "デフォルト値",
                 "description": "デフォルト値"
               },
               "description": {
                 "type": "string",
+                "title": "説明",
                 "description": "カラムの説明"
               }
             },
