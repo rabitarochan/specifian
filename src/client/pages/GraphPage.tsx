@@ -1,0 +1,293 @@
+/**
+ * リンクグラフ。GET /api/graph を d3-force でレイアウトし SVG 描画する。
+ * - forceLink / forceManyBody / forceCenter / forceCollide
+ * - カテゴリー別に色分け、missing ノードはグレー破線
+ * - クリックで遷移、ホバーで近傍ハイライト (他をディム)
+ * - ホイールズーム + 背景ドラッグでパン (viewBox 変換、d3-zoom 不使用)
+ * - ノードドラッグで再配置
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  type Simulation,
+  type SimulationLinkDatum,
+  type SimulationNodeDatum,
+} from 'd3-force';
+import type { Graph, GraphNode } from '@shared/types';
+import { specRoute } from '@shared/types';
+import { fetchGraph, ApiHttpError } from '../api';
+import { categoryColor } from './categoryColor';
+
+interface SimNode extends SimulationNodeDatum {
+  id: string;
+  title: string;
+  category: string;
+  missing: boolean;
+}
+
+type SimLink = SimulationLinkDatum<SimNode>;
+
+const WIDTH = 1200;
+const HEIGHT = 800;
+
+export function GraphPage() {
+  const navigate = useNavigate();
+  const [graph, setGraph] = useState<Graph | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [, forceRender] = useState(0);
+
+  const nodesRef = useRef<SimNode[]>([]);
+  const linksRef = useRef<SimLink[]>([]);
+  const simRef = useRef<Simulation<SimNode, SimLink> | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // viewBox (パン/ズーム)
+  const [view, setView] = useState({ x: 0, y: 0, w: WIDTH, h: HEIGHT });
+  const [hovered, setHovered] = useState<string | null>(null);
+  const dragState = useRef<
+    | { kind: 'pan'; startX: number; startY: number; origin: typeof view }
+    | { kind: 'node'; node: SimNode }
+    | null
+  >(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchGraph()
+      .then((g) => {
+        if (active) setGraph(g);
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        setError(err instanceof ApiHttpError ? err.message : 'グラフの取得に失敗しました。');
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // シミュレーション構築
+  useEffect(() => {
+    if (!graph) return;
+    const nodes: SimNode[] = graph.nodes.map((n: GraphNode) => ({
+      id: n.id,
+      title: n.title,
+      category: n.category,
+      missing: !!n.missing,
+    }));
+    const byId = new Map(nodes.map((n) => [n.id, n]));
+    const links: SimLink[] = graph.edges
+      .filter((e) => byId.has(e.source) && byId.has(e.target))
+      .map((e) => ({ source: e.source, target: e.target }));
+
+    nodesRef.current = nodes;
+    linksRef.current = links;
+
+    const sim = forceSimulation<SimNode, SimLink>(nodes)
+      .force(
+        'link',
+        forceLink<SimNode, SimLink>(links)
+          .id((d) => d.id)
+          .distance(90)
+          .strength(0.6),
+      )
+      .force('charge', forceManyBody<SimNode>().strength(-260))
+      .force('center', forceCenter<SimNode>(WIDTH / 2, HEIGHT / 2))
+      .force('collide', forceCollide<SimNode>(34));
+
+    sim.on('tick', () => {
+      forceRender((n) => n + 1);
+    });
+
+    simRef.current = sim;
+    return () => {
+      sim.stop();
+      simRef.current = null;
+    };
+  }, [graph]);
+
+  // 近傍集合 (ハイライト用)。graph.edges から直接構築する。
+  const neighbors = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    if (!graph) return map;
+    for (const e of graph.edges) {
+      if (!map.has(e.source)) map.set(e.source, new Set());
+      if (!map.has(e.target)) map.set(e.target, new Set());
+      map.get(e.source)!.add(e.target);
+      map.get(e.target)!.add(e.source);
+    }
+    return map;
+  }, [graph]);
+
+  const isDimmed = (id: string): boolean => {
+    if (!hovered) return false;
+    if (id === hovered) return false;
+    return !neighbors.get(hovered)?.has(id);
+  };
+
+  // 座標 → SVG ユーザー座標へ変換
+  const toUser = useCallback(
+    (clientX: number, clientY: number): { x: number; y: number } => {
+      const svg = svgRef.current;
+      if (!svg) return { x: 0, y: 0 };
+      const rect = svg.getBoundingClientRect();
+      const px = (clientX - rect.left) / rect.width;
+      const py = (clientY - rect.top) / rect.height;
+      return { x: view.x + px * view.w, y: view.y + py * view.h };
+    },
+    [view],
+  );
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const factor = e.deltaY > 0 ? 1.1 : 1 / 1.1;
+    const focus = toUser(e.clientX, e.clientY);
+    setView((v) => {
+      const w = v.w * factor;
+      const h = v.h * factor;
+      // フォーカス点を保持してズーム
+      return {
+        w,
+        h,
+        x: focus.x - ((focus.x - v.x) / v.w) * w,
+        y: focus.y - ((focus.y - v.y) / v.h) * h,
+      };
+    });
+  };
+
+  const onBackgroundPointerDown = (e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragState.current = { kind: 'pan', startX: e.clientX, startY: e.clientY, origin: view };
+  };
+
+  const onNodePointerDown = (e: React.PointerEvent, node: SimNode) => {
+    e.stopPropagation();
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    dragState.current = { kind: 'node', node };
+    simRef.current?.alphaTarget(0.3).restart();
+    node.fx = node.x;
+    node.fy = node.y;
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const ds = dragState.current;
+    if (!ds) return;
+    if (ds.kind === 'pan') {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const dx = ((e.clientX - ds.startX) / rect.width) * ds.origin.w;
+      const dy = ((e.clientY - ds.startY) / rect.height) * ds.origin.h;
+      setView({ ...ds.origin, x: ds.origin.x - dx, y: ds.origin.y - dy });
+    } else {
+      const p = toUser(e.clientX, e.clientY);
+      ds.node.fx = p.x;
+      ds.node.fy = p.y;
+    }
+  };
+
+  const onPointerUp = () => {
+    const ds = dragState.current;
+    if (ds?.kind === 'node') {
+      simRef.current?.alphaTarget(0);
+      ds.node.fx = null;
+      ds.node.fy = null;
+    }
+    dragState.current = null;
+  };
+
+  if (error) {
+    return (
+      <article className="sb-content">
+        <div className="sb-error-panel" role="alert">
+          <div className="sb-error-panel__title">グラフエラー</div>
+          <div className="sb-error-panel__message">{error}</div>
+        </div>
+      </article>
+    );
+  }
+
+  if (!graph) return <div className="sb-loading">読み込み中…</div>;
+
+  const nodes = nodesRef.current;
+  const links = linksRef.current;
+
+  return (
+    <div className="sb-graph-page">
+      <header className="sb-page-bar">
+        <h1 className="sb-page-bar__title">リンクグラフ</h1>
+        <span className="sb-graph-hint">
+          ドラッグでノード移動 / 背景ドラッグでパン / ホイールでズーム
+        </span>
+      </header>
+      <div className="sb-graph-canvas">
+        <svg
+          ref={svgRef}
+          className="sb-graph-svg"
+          viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
+          onWheel={onWheel}
+          onPointerDown={onBackgroundPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerUp}
+        >
+          <g>
+            {links.map((l, i) => {
+              const s = l.source as SimNode;
+              const t = l.target as SimNode;
+              if (typeof s !== 'object' || typeof t !== 'object') return null;
+              const dim = isDimmed(s.id) && isDimmed(t.id);
+              return (
+                <line
+                  key={i}
+                  x1={s.x}
+                  y1={s.y}
+                  x2={t.x}
+                  y2={t.y}
+                  className="sb-graph-edge"
+                  opacity={dim ? 0.08 : 0.5}
+                />
+              );
+            })}
+          </g>
+          <g>
+            {nodes.map((n) => {
+              const dim = isDimmed(n.id);
+              const color = n.missing ? '#9ca3af' : categoryColor(n.category);
+              return (
+                <g
+                  key={n.id}
+                  transform={`translate(${n.x ?? 0}, ${n.y ?? 0})`}
+                  className="sb-graph-node"
+                  opacity={dim ? 0.2 : 1}
+                  onPointerDown={(e) => onNodePointerDown(e, n)}
+                  onMouseEnter={() => setHovered(n.id)}
+                  onMouseLeave={() => setHovered(null)}
+                  onClick={() => {
+                    if (!n.missing) navigate(specRoute(n.id));
+                  }}
+                  style={{ cursor: n.missing ? 'default' : 'pointer' }}
+                >
+                  <circle
+                    r={14}
+                    fill={n.missing ? 'transparent' : color}
+                    stroke={color}
+                    strokeWidth={2}
+                    strokeDasharray={n.missing ? '4 3' : undefined}
+                  />
+                  <text className="sb-graph-label" x={18} y={4}>
+                    {n.title}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
+        </svg>
+      </div>
+    </div>
+  );
+}

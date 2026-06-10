@@ -1,0 +1,32 @@
+---
+title: users テーブル
+description: ユーザーアカウント情報を管理するテーブル
+table:
+  name: users
+  description: ユーザーアカウント情報
+  columns:
+    - { name: id, type: bigint, primaryKey: true, description: 主キー }
+    - { name: email, type: varchar(255), nullable: false, description: メールアドレス（ユニーク制約） }
+    - { name: name, type: varchar(100), nullable: true, description: ユーザー名 }
+    - { name: role, type: varchar(20), nullable: false, default: "'member'", description: ロール（admin / moderator / member） }
+    - { name: created_at, type: timestamp, nullable: false, description: 作成日時 }
+    - { name: updated_at, type: timestamp, nullable: false, description: 更新日時 }
+---
+
+# {title}
+
+ユーザーアカウント情報を管理するメインテーブル。認証とアクセス制御に使用されます。
+
+<TableDefinition data={data.table} />
+
+## 設計メモ
+
+- メールアドレスはユニーク制約を設定し、重複登録を防止しています
+- 論理削除（soft delete）は実装せず、物理削除を前提としています
+- role はアプリケーションレベルで検証を行い、不正な値が入らないようにしてください
+- created_at / updated_at は自動タイムスタンプ管理を推奨します
+
+## 関連スペック
+
+- [[tables:posts]] — 投稿テーブル（user_id で参照）
+- [[api:users-api]] — ユーザー管理 API

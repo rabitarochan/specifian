@@ -1,0 +1,34 @@
+---
+title: posts テーブル
+description: ユーザーが投稿したコンテンツを管理するテーブル
+table:
+  name: posts
+  description: ユーザー投稿情報
+  columns:
+    - { name: id, type: bigint, primaryKey: true, description: 主キー }
+    - { name: user_id, type: bigint, nullable: false, description: "ユーザー ID（users テーブルへの外部キー）" }
+    - { name: title, type: varchar(200), nullable: false, description: 投稿タイトル }
+    - { name: body, type: text, nullable: false, description: 投稿本文 }
+    - { name: status, type: varchar(20), nullable: false, default: "'draft'", description: 投稿ステータス（draft / published / archived） }
+    - { name: published_at, type: timestamp, nullable: true, description: 公開日時（公開前は NULL） }
+    - { name: created_at, type: timestamp, nullable: false, description: 作成日時 }
+    - { name: updated_at, type: timestamp, nullable: false, description: 更新日時 }
+---
+
+# {title}
+
+ユーザーが投稿したコンテンツを管理するテーブル。ブログ記事やニュース投稿などに対応します。
+
+<TableDefinition data={data.table} />
+
+## 設計メモ
+
+- user_id は [[tables:users]] テーブルへの外部キーです
+- status のデフォルト値は 'draft' で、自動公開は行われません
+- published_at は公開予定日時の指定にも使えます
+- 論理削除が必要な場合は、status を 'archived' にして対応してください
+
+## 関連スペック
+
+- [[tables:users]] — 投稿者情報（user_id で参照）
+- [[api:posts-api]] — 投稿管理 API

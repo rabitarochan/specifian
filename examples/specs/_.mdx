@@ -1,0 +1,49 @@
+---
+title: ホーム
+description: specbook へようこそ。設計ドキュメントの一元管理ツール
+---
+
+# ホーム
+
+specbook へようこそ。このツールは Storybook のように、`specs/` 配下の MDX ファイルを Web で表示・編集する設計ドキュメント管理ツールです。
+
+## specbook の使い方
+
+### front-matter がデータになる
+各スペック MDX の YAML front-matter を構造化設計データとして扱います。本文の React コンポーネントから `data` 変数でアクセスでき、API でも一括取得できます。
+
+```markdown
+---
+title: users テーブル
+table:
+  name: users
+  columns:
+    - { name: id, type: bigint, primaryKey: true }
+---
+
+# {title}
+
+<TableDefinition data={data.table} />
+```
+
+### wiki リンクで関連スペック参照
+`[[category:slug]]` の形式で、同じプロジェクト内の他のスペックへリンクできます。スペック間の依存関係も可視化されます。
+
+```markdown
+[[tables:users]] // specs/tables/users.mdx へのリンク
+[[api:users-api|ユーザー API]] // 表示テキストを指定
+```
+
+グラフページ (`/graph`) では、リンクネットワークをインタラクティブに表示できます。
+
+### Web UI で編集
+左のサイドバーで「編集」ボタンを押すと、左に Markdown エディター、右にライブプレビューのスプリットビューで編集できます。Ctrl+S または「保存」ボタンで ファイルに反映されます。
+
+## サンプルカテゴリー
+
+- **[[tables:_]]** — データベーステーブル定義
+- **[[api:_]]** — API 仕様
+
+各カテゴリーの `_.mdx` はインデックスページで、カテゴリー内のスペック一覧を表示します。`_template.mdx` は新規スペック作成時のテンプレートになります。
+
+<SpecList />

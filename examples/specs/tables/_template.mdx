@@ -1,0 +1,19 @@
+---
+title: 新しいテーブル
+description: テーブルの説明
+table:
+  name: table_name
+  description: テーブルの説明
+  columns:
+    - { name: id, type: bigint, primaryKey: true, description: 主キー }
+    - { name: created_at, type: timestamp, nullable: false, description: 作成日時 }
+    - { name: updated_at, type: timestamp, nullable: false, description: 更新日時 }
+---
+
+# {title}
+
+<TableDefinition data={data.table} />
+
+## 補足説明
+
+テーブルの設計意図や特殊な取り扱いについて、ここに記載します。
