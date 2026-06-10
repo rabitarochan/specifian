@@ -156,7 +156,39 @@ specbook generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 - `npm run build` — tsup + vite build
 - `npm start` — ビルド済みを examples/specs で起動
 
-## 将来拡張 (v2, 今回は実装しない)
+## v2 機能設計
 
-- `specs/_components/*.tsx` によるユーザー定義コンポーネントの動的ロード
-- 全文検索、Mermaid 対応、front-matter のスキーマバリデーション
+### ユーザー定義コンポーネント (`specs/_components/`)
+
+- `specs/_components/*.tsx` / `*.jsx` に React コンポーネントを置くと、全 MDX で import 不要で使える
+- `GET /api/components` → `UserComponentFile[]` (パス + ソース)。`_components` はスペック走査から除外
+- クライアントは **sucrase** (dynamic import でバンドル分離) で TSX → CJS 変換
+  (transforms: `typescript`, `jsx` (classic / React.createElement), `imports`)、
+  `new Function('require', 'module', 'exports', ...)` で実行。require シムは `react` のみ解決し、それ以外の import は明確なエラーメッセージを投げる
+- コンポーネント名: 名前付き export はその名前、default export はファイル名の PascalCase。組み込みと衝突した場合は**ユーザー定義が優先**
+- watcher は `_components` 配下の変更も `FsEvent` (specId: null) で通知 → クライアントはコンパイルキャッシュを破棄して再描画
+- コンパイル/実行エラーはアプリを落とさずエラーパネル表示
+
+### 全文検索
+
+- `GET /api/search?q=<query>&limit=<n=20>` → `SearchResult[]`
+- 対象フィールドとスコア順: title > description > front-matter (JSON 文字列化) > 本文。大文字小文字を無視した部分一致 (日本語は素直な substring)
+- UI: **Ctrl+K / Cmd+K** でコマンドパレット風モーダル。150ms デバウンスのインクリメンタル検索、↑↓ で選択、Enter で遷移。サイドバー上部に検索ボタンも置く
+
+### Mermaid
+
+- ` ```mermaid ` コードフェンスを `MermaidDiagram` コンポーネントが SVG 描画
+- mermaid 本体は dynamic import (メインバンドルから分離)。描画エラーはエラーボックス表示
+- components map の `code` レンダラーで `language-mermaid` を検出してフック
+
+### front-matter スキーマバリデーション
+
+- `<category>/_schema.json` (JSON Schema) を置くと、そのカテゴリーの通常スペック (インデックス `_`・`_template` を除く) の front-matter を **ajv** (allErrors) で検証
+- `GET /api/validation` → `ValidationReport`
+- CLI: `specbook validate [--dir]` — 違反があれば一覧表示して exit code 1 (CI 組み込み用)
+- UI: サイドバーのスペック行に警告バッジ、スペックページ上部に違反一覧バナー
+
+## 将来拡張 (v3 候補)
+
+- front-matter の GUI フォーム編集 (スキーマからフォーム生成)
+- 全文検索のインデックス化 (大規模 specs 向け)、Mermaid テーマ設定

@@ -9,6 +9,9 @@ import { categoriesRouter } from './routes/categories.js';
 import { dataRouter } from './routes/data.js';
 import { graphRouter } from './routes/graph.js';
 import { generatorsRouter, generateRouter } from './routes/generators.js';
+import { searchRouter } from './routes/search.js';
+import { componentsRouter } from './routes/components.js';
+import { validationRouter } from './routes/validation.js';
 import { startWatcher } from './watcher.js';
 
 export interface ServerOptions {
@@ -34,6 +37,9 @@ export function createServer(options: ServerOptions): SpecbookServer {
   app.use('/api/graph', graphRouter(specsDir));
   app.use('/api/generators', generatorsRouter(specsDir));
   app.use('/api/generate', generateRouter(specsDir));
+  app.use('/api/search', searchRouter(specsDir));
+  app.use('/api/components', componentsRouter(specsDir));
+  app.use('/api/validation', validationRouter(specsDir));
 
   // Static client
   // Compiled dist layout: dist/cli/index.js -> dist/client (sibling of cli/)

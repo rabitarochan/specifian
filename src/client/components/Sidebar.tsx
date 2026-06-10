@@ -7,7 +7,10 @@ import { useMemo, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import type { SpecMeta } from '@shared/types';
 import { specRoute } from '@shared/types';
+import type { ValidationIssue } from '@shared/types';
 import { useSpecs } from './SpecsProvider';
+import { useValidation } from './ValidationProvider';
+import { useSearchPalette } from './SearchPalette';
 import { NewCategoryDialog } from './NewCategoryDialog';
 import { NewSpecDialog } from './NewSpecDialog';
 
@@ -52,12 +55,26 @@ function buildTree(specs: SpecMeta[]): TreeNode {
   return root;
 }
 
+/** スペック行に付けるスキーマ違反バッジ */
+function IssueBadge({ issues }: { issues: ValidationIssue[] }) {
+  const title = `${issues.length} 件のスキーマ違反\n${issues
+    .map((i) => `${i.path}: ${i.message}`)
+    .join('\n')}`;
+  return (
+    <span className="sb-issue-badge" title={title} aria-label={title}>
+      ⚠
+    </span>
+  );
+}
+
 function CategoryNode({
   node,
   onAddSpec,
+  issuesBySpecId,
 }: {
   node: TreeNode;
   onAddSpec: (category: string) => void;
+  issuesBySpecId: Record<string, ValidationIssue[]>;
 }) {
   const sortedChildren = useMemo(
     () => [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name)),
@@ -90,20 +107,29 @@ function CategoryNode({
       {(sortedChildren.length > 0 || sortedSpecs.length > 0) && (
         <ul className="sb-tree__children">
           {sortedChildren.map((child) => (
-            <CategoryNode key={child.path} node={child} onAddSpec={onAddSpec} />
+            <CategoryNode
+              key={child.path}
+              node={child}
+              onAddSpec={onAddSpec}
+              issuesBySpecId={issuesBySpecId}
+            />
           ))}
-          {sortedSpecs.map((s) => (
-            <li key={s.id} className="sb-tree__spec">
-              <NavLink
-                to={specRoute(s.id)}
-                className={({ isActive }) =>
-                  isActive ? 'sb-tree__speclink sb-tree__speclink--active' : 'sb-tree__speclink'
-                }
-              >
-                {s.title}
-              </NavLink>
-            </li>
-          ))}
+          {sortedSpecs.map((s) => {
+            const issues = issuesBySpecId[s.id];
+            return (
+              <li key={s.id} className="sb-tree__spec">
+                <NavLink
+                  to={specRoute(s.id)}
+                  className={({ isActive }) =>
+                    isActive ? 'sb-tree__speclink sb-tree__speclink--active' : 'sb-tree__speclink'
+                  }
+                >
+                  {s.title}
+                  {issues && issues.length > 0 && <IssueBadge issues={issues} />}
+                </NavLink>
+              </li>
+            );
+          })}
         </ul>
       )}
     </li>
@@ -112,6 +138,8 @@ function CategoryNode({
 
 export function Sidebar() {
   const { specs } = useSpecs();
+  const { issuesBySpecId } = useValidation();
+  const { openPalette } = useSearchPalette();
   const navigate = useNavigate();
   const [showCategory, setShowCategory] = useState(false);
   const [specDialogCategory, setSpecDialogCategory] = useState<string | null>(null);
@@ -129,6 +157,14 @@ export function Sidebar() {
           specbook
         </Link>
       </div>
+
+      <button className="sb-search-btn" onClick={openPalette}>
+        <span className="sb-search-btn__icon" aria-hidden="true">
+          🔍
+        </span>
+        <span className="sb-search-btn__label">検索</span>
+        <kbd className="sb-kbd">Ctrl+K</kbd>
+      </button>
 
       <nav className="sb-sidebar__nav">
         <NavLink
@@ -166,7 +202,12 @@ export function Sidebar() {
           <li className="sb-tree__empty">カテゴリーがありません</li>
         )}
         {topLevel.map((node) => (
-          <CategoryNode key={node.path} node={node} onAddSpec={setSpecDialogCategory} />
+          <CategoryNode
+            key={node.path}
+            node={node}
+            onAddSpec={setSpecDialogCategory}
+            issuesBySpecId={issuesBySpecId}
+          />
         ))}
       </ul>
 

@@ -109,6 +109,38 @@ export interface ApiError {
   error: string;
 }
 
+/** GET /api/search?q=&limit= の 1 件 */
+export interface SearchResult {
+  id: string;
+  title: string;
+  category: string;
+  slug: string;
+  /** マッチ箇所の抜粋 (前後の文脈を含む) */
+  snippet: string;
+  /** マッチしたフィールド (スコア順: title > description > data > body) */
+  field: 'title' | 'description' | 'data' | 'body';
+}
+
+/** スキーマ違反 1 件 */
+export interface ValidationIssue {
+  specId: string;
+  /** データパス (例: "/table/columns/0/type") */
+  path: string;
+  message: string;
+}
+
+/** GET /api/validation のレスポンス。_schema.json を持つカテゴリーのみ対象 */
+export interface ValidationReport {
+  issues: ValidationIssue[];
+}
+
+/** GET /api/components の 1 件 (specs/_components/ 配下のユーザー定義コンポーネント) */
+export interface UserComponentFile {
+  /** specsDir 相対パス "_components/StatusBadge.tsx" */
+  path: string;
+  source: string;
+}
+
 /** wiki リンク抽出用正規表現 (コードフェンス/インラインコード内の除外は呼び出し側で行う) */
 export const WIKILINK_PATTERN = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
 
