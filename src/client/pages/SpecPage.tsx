@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import type { SpecDetail, FsEvent } from '@shared/types';
+import type { SpecDetail, FsEvent, LintIssue } from '@shared/types';
 import { fetchSpec, saveSpec, fetchCategorySchema, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
 import { useValidation } from '../components/ValidationProvider';
@@ -42,6 +42,8 @@ export function SpecPage({ category, slug, specId }: Props) {
   const [saving, setSaving] = useState(false);
   const [externalChange, setExternalChange] = useState(false);
   const [editTab, setEditTab] = useState<EditTab>('text');
+  // 保存時の lint issues (amber バナーで表示)
+  const [saveIssues, setSaveIssues] = useState<LintIssue[]>([]);
   // カテゴリーごとの _schema.json キャッシュ (null = スキーマ無し)
   const [categorySchema, setCategorySchema] = useState<JsonSchema | null>(null);
   const [schemaCategory, setSchemaCategory] = useState<string | null>(null);
@@ -58,6 +60,8 @@ export function SpecPage({ category, slug, specId }: Props) {
       if (!silent) {
         setDetail(null);
         setLoadError(null);
+        // スペックが変わったら保存 issues もクリア
+        setSaveIssues([]);
       }
       try {
         const d = await fetchSpec(category, slug);
@@ -105,10 +109,12 @@ export function SpecPage({ category, slug, specId }: Props) {
     if (!detail || saving) return;
     setSaving(true);
     try {
-      const { meta } = await saveSpec(category, slug, text);
-      setDetail({ meta, content: text });
+      const res = await saveSpec(category, slug, text);
+      setDetail({ meta: res.meta, content: text });
       setExternalChange(false);
       show('保存しました');
+      // 保存 issues を更新 (0 件ならクリア)
+      setSaveIssues(res.issues ?? []);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '保存に失敗しました。';
       show(msg);
@@ -216,6 +222,31 @@ export function SpecPage({ category, slug, specId }: Props) {
             {issues.map((issue, i) => (
               <li key={`${issue.path}:${i}`}>
                 <code>{issue.path}</code>: {issue.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {saveIssues.length > 0 && (
+        <div className="sb-validation-banner sb-save-issues-banner" role="alert">
+          <div className="sb-save-issues-banner__head">
+            <strong className="sb-validation-banner__title">
+              保存時の検証で {saveIssues.length} 件の問題
+            </strong>
+            <button
+              className="sb-icon-btn"
+              aria-label="閉じる"
+              onClick={() => setSaveIssues([])}
+            >
+              ✕
+            </button>
+          </div>
+          <ul className="sb-validation-banner__list">
+            {saveIssues.map((issue, i) => (
+              <li key={`${issue.rule}:${i}`}>
+                <code>[{issue.rule}]</code> {issue.message}
+                {issue.line != null && ` (行 ${issue.line})`}
               </li>
             ))}
           </ul>

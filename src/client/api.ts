@@ -16,6 +16,9 @@ import type {
   CategorySchemaResponse,
   DrawingMeta,
   ApiError,
+  SaveSpecResponse,
+  RenameSpecResponse,
+  RefsResponse,
 } from '@shared/types';
 
 /** API が 404 を返したときに投げる、呼び出し側で判別可能なエラー */
@@ -75,16 +78,37 @@ export function fetchSpecByPath(path: string): Promise<SpecDetail> {
   return request<SpecDetail>(`/api/specs/${path}`);
 }
 
-/** PUT /api/specs/<category>/<slug> — 保存 */
+/** PUT /api/specs/<category>/<slug> — 保存。issues は情報提供 (保存は常に実行) */
 export function saveSpec(
   category: string,
   slug: string,
   content: string,
-): Promise<{ meta: SpecMeta }> {
-  return request<{ meta: SpecMeta }>(`/api/specs/${specPath(category, slug)}`, {
+): Promise<SaveSpecResponse> {
+  return request<SaveSpecResponse>(`/api/specs/${specPath(category, slug)}`, {
     method: 'PUT',
     body: JSON.stringify({ content }),
   });
+}
+
+/** POST /api/rename — スペック ID のリネーム (from/to は "category:slug") */
+export function renameSpecId(from: string, to: string): Promise<RenameSpecResponse> {
+  return request<RenameSpecResponse>('/api/rename', {
+    method: 'POST',
+    body: JSON.stringify({ from, to }),
+  });
+}
+
+/** DELETE /api/specs/<categoryPath>/<slug> — スペック削除 */
+export function deleteSpecById(category: string, slug: string): Promise<{ ok: true }> {
+  return request<{ ok: true }>(`/api/specs/${specPath(category, slug)}`, {
+    method: 'DELETE',
+  });
+}
+
+/** GET /api/refs?id=<specId> — id を参照しているスペック ID 一覧 */
+export function fetchRefs(id: string): Promise<RefsResponse> {
+  const params = new URLSearchParams({ id });
+  return request<RefsResponse>(`/api/refs?${params.toString()}`);
 }
 
 /** POST /api/specs — 新規スペック作成 */

@@ -2,8 +2,9 @@
  * 左サイドバー: アプリ名 + ナビ (ホーム/グラフ) + カテゴリーツリー。
  * カテゴリーはネストパス (`api/v1`) を木構造に展開して表示する。
  * ヘッダーに「新しいカテゴリー」、各カテゴリーに「スペックを追加」ボタン。
+ * スペック行に「⋯」hover メニュー (リネーム / 削除)。
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import type { SpecMeta } from '@shared/types';
 import { specRoute } from '@shared/types';
@@ -13,6 +14,8 @@ import { useValidation } from './ValidationProvider';
 import { useSearchPalette } from './SearchPalette';
 import { NewCategoryDialog } from './NewCategoryDialog';
 import { NewSpecDialog } from './NewSpecDialog';
+import { RenameSpecDialog } from './RenameSpecDialog';
+import { DeleteSpecDialog } from './DeleteSpecDialog';
 
 interface TreeNode {
   /** このノードのフルパス ("api", "api/v1") */
@@ -67,13 +70,102 @@ function IssueBadge({ issues }: { issues: ValidationIssue[] }) {
   );
 }
 
+/**
+ * スペック行に hover で現れる ⋯ ポップオーバーメニュー。
+ * 「リネーム」「削除」の 2 アクションを提供する。
+ * 外部クリック / Escape で閉じる。
+ */
+function SpecRowMenu({
+  specId,
+  onRename,
+  onDelete,
+}: {
+  specId: string;
+  onRename: (id: string) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // 外部クリックで閉じる
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  // Escape で閉じる
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open]);
+
+  return (
+    <div className="sb-row-menu-wrap" ref={menuRef}>
+      <button
+        className="sb-icon-btn sb-tree__more"
+        title="メニュー"
+        aria-label="メニューを開く"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        ⋯
+      </button>
+      {open && (
+        <div className="sb-row-menu" role="menu">
+          <button
+            className="sb-row-menu__item"
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onRename(specId);
+            }}
+          >
+            リネーム
+          </button>
+          <button
+            className="sb-row-menu__item sb-row-menu__item--danger"
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onDelete(specId);
+            }}
+          >
+            削除
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CategoryNode({
   node,
   onAddSpec,
+  onRenameSpec,
+  onDeleteSpec,
   issuesBySpecId,
 }: {
   node: TreeNode;
   onAddSpec: (category: string) => void;
+  onRenameSpec: (id: string) => void;
+  onDeleteSpec: (id: string) => void;
   issuesBySpecId: Record<string, ValidationIssue[]>;
 }) {
   const sortedChildren = useMemo(
@@ -111,6 +203,8 @@ function CategoryNode({
               key={child.path}
               node={child}
               onAddSpec={onAddSpec}
+              onRenameSpec={onRenameSpec}
+              onDeleteSpec={onDeleteSpec}
               issuesBySpecId={issuesBySpecId}
             />
           ))}
@@ -127,6 +221,11 @@ function CategoryNode({
                   {s.title}
                   {issues && issues.length > 0 && <IssueBadge issues={issues} />}
                 </NavLink>
+                <SpecRowMenu
+                  specId={s.id}
+                  onRename={onRenameSpec}
+                  onDelete={onDeleteSpec}
+                />
               </li>
             );
           })}
@@ -143,6 +242,8 @@ export function Sidebar() {
   const navigate = useNavigate();
   const [showCategory, setShowCategory] = useState(false);
   const [specDialogCategory, setSpecDialogCategory] = useState<string | null>(null);
+  const [renameSpecId, setRenameSpecId] = useState<string | null>(null);
+  const [deleteSpecId, setDeleteSpecId] = useState<string | null>(null);
 
   const tree = useMemo(() => buildTree(specs), [specs]);
   const topLevel = useMemo(
@@ -206,6 +307,8 @@ export function Sidebar() {
             key={node.path}
             node={node}
             onAddSpec={setSpecDialogCategory}
+            onRenameSpec={setRenameSpecId}
+            onDeleteSpec={setDeleteSpecId}
             issuesBySpecId={issuesBySpecId}
           />
         ))}
@@ -228,6 +331,18 @@ export function Sidebar() {
             setSpecDialogCategory(null);
             navigate(`${specRoute(`${category}:${slug}`)}?edit=1`);
           }}
+        />
+      )}
+      {renameSpecId !== null && (
+        <RenameSpecDialog
+          specId={renameSpecId}
+          onClose={() => setRenameSpecId(null)}
+        />
+      )}
+      {deleteSpecId !== null && (
+        <DeleteSpecDialog
+          specId={deleteSpecId}
+          onClose={() => setDeleteSpecId(null)}
         />
       )}
     </aside>

@@ -147,6 +147,55 @@ export interface DrawingMeta {
   path: string;
 }
 
+/** POST /api/lint のリクエスト (保存せずに検証する) */
+export interface LintRequest {
+  /** front-matter 込みの MDX 全文 */
+  content: string;
+  /** スキーマ検証に使うカテゴリー (省略時はスキーマ検証をスキップ) */
+  category?: string;
+  slug?: string;
+}
+
+/** lint / 保存時検証の 1 件 */
+export interface LintIssue {
+  severity: 'error' | 'warning';
+  rule: 'mdx' | 'yaml' | 'wikilink' | 'schema';
+  message: string;
+  /** 1 始まり (分かる場合のみ) */
+  line?: number;
+  column?: number;
+}
+
+/** POST /api/lint のレスポンス */
+export interface LintResponse {
+  issues: LintIssue[];
+}
+
+/** PUT /api/specs/... のレスポンス (保存は常に実行され、issues は情報提供) */
+export interface SaveSpecResponse {
+  meta: SpecMeta;
+  issues: LintIssue[];
+}
+
+/** POST /api/rename のリクエスト (from/to はスペック ID "category:slug") */
+export interface RenameSpecRequest {
+  from: string;
+  to: string;
+}
+
+/** POST /api/rename のレスポンス */
+export interface RenameSpecResponse {
+  meta: SpecMeta;
+  /** wiki リンクを書き換えたスペック ID 一覧 */
+  rewrittenFiles: string[];
+}
+
+/** GET /api/refs?id=<specId> のレスポンス */
+export interface RefsResponse {
+  /** id を wiki リンクで参照しているスペック ID 一覧 */
+  refs: string[];
+}
+
 /** GET /api/schema/<category> のレスポンス。_schema.json が無いカテゴリーは schema: null */
 export interface CategorySchemaResponse {
   schema: Record<string, unknown> | null;
