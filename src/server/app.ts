@@ -13,6 +13,7 @@ import { searchRouter } from './routes/search.js';
 import { componentsRouter } from './routes/components.js';
 import { validationRouter } from './routes/validation.js';
 import { schemaRouter } from './routes/schema.js';
+import { drawingsRouter } from './routes/drawings.js';
 import { startWatcher } from './watcher.js';
 
 export interface ServerOptions {
@@ -42,6 +43,7 @@ export function createServer(options: ServerOptions): SpecbookServer {
   app.use('/api/components', componentsRouter(specsDir));
   app.use('/api/validation', validationRouter(specsDir));
   app.use('/api/schema', schemaRouter(specsDir));
+  app.use('/api/drawings', drawingsRouter(specsDir));
 
   // Static client
   // Compiled dist layout: dist/cli/index.js -> dist/client (sibling of cli/)

@@ -46,9 +46,12 @@ export function startWatcher(specsDir: string, wss: WebSocketServer): () => void
       const isUserComponent =
         rel.startsWith('_components/') && /\.(tsx|jsx)$/.test(rel);
 
-      if (!/\.mdx?$/.test(rel) && !isUserComponent) return;
+      // Excalidraw 図ファイル (*.excalidraw) も通知する (specId: null)。
+      const isExcalidraw = rel.endsWith('.excalidraw');
 
-      const specId = isUserComponent ? null : pathToSpecId(specsDir, filePath);
+      if (!/\.mdx?$/.test(rel) && !isUserComponent && !isExcalidraw) return;
+
+      const specId = isUserComponent || isExcalidraw ? null : pathToSpecId(specsDir, filePath);
       const msg: FsEvent = {
         type: 'fs',
         event,
