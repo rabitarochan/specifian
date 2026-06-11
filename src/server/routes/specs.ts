@@ -8,9 +8,12 @@ import {
   resolveSpecPathAny,
   guardPath,
 } from '../store.js';
+import { deleteSpec, SpecOpsError } from '../specOps.js';
+import { toSpecId } from '../../shared/types.js';
 import type {
   CreateSpecRequest,
   SaveSpecRequest,
+  LintIssue,
 } from '../../shared/types.js';
 
 export function specsRouter(specsDir: string): Router {
@@ -170,8 +173,53 @@ export function specsRouter(specsDir: string): Router {
         res.status(500).json({ error: '保存後の読み込みに失敗しました' });
         return;
       }
-      res.json({ meta: result.meta });
+
+      // 保存後に lint を実行して issues を返す (lint 失敗でも保存は成功扱い)
+      let issues: LintIssue[] = [];
+      try {
+        const { lintContent } = await import('../lintCore.js');
+        issues = await lintContent(specsDir, {
+          content: body.content,
+          category,
+          slug,
+        });
+      } catch (lintErr) {
+        // lintCore が未実装 / 例外でも保存結果は返す
+        console.error('[specs] lintContent 失敗 (無視):', lintErr);
+      }
+
+      res.json({ meta: result.meta, issues });
     } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  // DELETE /api/specs/* — スペック削除
+  router.delete('/*', async (req: Request, res: Response): Promise<void> => {
+    const paramPath = (req.params as Record<string, string>)[0] ?? '';
+    if (!paramPath) {
+      res.status(400).json({ error: 'パスが指定されていません' });
+      return;
+    }
+
+    const segments = paramPath.split('/').filter(Boolean);
+    if (segments.length === 0) {
+      res.status(400).json({ error: 'パスが指定されていません' });
+      return;
+    }
+
+    const slug = segments[segments.length - 1];
+    const category = segments.length > 1 ? segments.slice(0, -1).join('/') : '';
+    const id = toSpecId(category, slug);
+
+    try {
+      await deleteSpec(specsDir, id);
+      res.json({ ok: true });
+    } catch (err) {
+      if (err instanceof SpecOpsError) {
+        res.status(err.status).json({ error: err.message });
+        return;
+      }
       res.status(500).json({ error: String(err) });
     }
   });

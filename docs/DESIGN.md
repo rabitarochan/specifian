@@ -258,8 +258,55 @@ specbook generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 
 - `examples/specs/screens/` カテゴリー: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter に画面項目定義 + `<Drawing src="screens/login" />`) / `login.excalidraw` (ログイン画面の簡単なワイヤーフレーム)
 
-## 将来拡張 (v5 候補)
+## v5 機能設計: MCP サーバー / lint API / リネーム・削除
 
-- 全文検索のインデックス化 (大規模 specs 向け)、Mermaid テーマ設定
-- フォームのカスタムウィジェット (`x-widget` 拡張)
-- Drawing のグラフページ統合 (図とスペックのリンク可視化)
+### コンセプト
+
+AI エージェントが specbook を安全に読み書きできるようにする (MCP + lint)。
+あわせて、人間・エージェント双方に必要な「ドキュメントの育て直し」操作 (リネーム・削除) を提供する。
+
+### サーバー共有モジュール (routes と MCP の双方から使う)
+
+- `src/server/searchCore.ts` — `searchSpecs(specsDir, q, limit): Promise<SearchResult[]>` (routes/search.ts のロジックを抽出、route は薄く)
+- `src/server/lintCore.ts` — `lintContent(specsDir, req: LintRequest): Promise<LintIssue[]>`:
+  1. YAML: gray-matter のパース失敗 → error (rule: yaml)
+  2. MDX 構文: `@mdx-js/mdx` の `compile` (remark-gfm + remark-frontmatter) 失敗 → error (rule: mdx, line/column 付き)
+  3. wiki リンク: 本文から抽出した `[[id]]` が既存スペックに解決できない → warning (rule: wikilink)
+  4. スキーマ: category 指定時、`_schema.json` があれば front-matter を ajv 検証 → error (rule: schema)
+- `src/server/specOps.ts` — `findRefs(specsDir, id)` / `renameSpec(specsDir, from, to)` / `deleteSpec(specsDir, id)`:
+  - rename: ファイル名変更 (to のカテゴリーは存在必須) + 全スペックの `[[from]]` `[[from|ラベル]]` を一括書き換え。
+    **コードフェンス・インラインコード内は書き換えない** (フェンス領域を位置ベースで除外)
+  - 既存チェック: from 存在 (404) / to 非存在 (409) / カテゴリー不在 (400)
+
+### API 追加・変更
+
+| メソッド/パス | 説明 |
+|---|---|
+| `POST /api/lint` | body `LintRequest { content, category?, slug? }` → `{ issues: LintIssue[] }` (保存しない) |
+| `PUT /api/specs/...` | 応答を `SaveSpecResponse { meta, issues }` に拡張 (保存は常に実行、issues は情報) |
+| `POST /api/rename` | body `{ from, to }` (スペック ID) → `{ meta, rewrittenFiles }` |
+| `DELETE /api/specs/<categoryPath>/<slug>` | スペック削除。`_.mdx` (`slug: _`) も削除可 |
+| `GET /api/refs?id=<specId>` | `{ refs: string[] }` — id を参照しているスペック ID 一覧 |
+
+### MCP サーバー (`specbook mcp [--dir ./specs]`)
+
+- `@modelcontextprotocol/sdk` の stdio トランスポート。**stdout には書かない** (プロトコル破壊) — ログは stderr
+- ツール (入力は zod スキーマ、結果は JSON 文字列の content):
+  `list_specs` / `read_spec {id}` / `write_spec {id, content}` (既存のみ、issues を返す) / `create_spec {category, slug, title?}` /
+  `rename_spec {from, to}` / `delete_spec {id}` / `search {query, limit?}` / `get_data {category?}` /
+  `validate` / `lint {content, category?}` / `list_generators` / `generate {generator, specId?, out?}`
+- 各ツールの description は日本語で、エージェントが迷わない具体性で書く (ID 形式 "category:slug" の説明等)
+
+### クライアント UI
+
+- サイドバーのスペック行に hover「⋯」メニュー → リネーム / 削除
+  - リネーム: カテゴリー (datalist) + slug 入力 → POST /api/rename → toast「リンク N 件を書き換えました」。表示中のスペックなら新ルートへ遷移
+  - 削除: GET /api/refs で参照元を表示 (「N 件から参照されています」+ 一覧) → 確認 → DELETE。表示中ならホームへ
+- 保存時: SaveSpecResponse.issues が非空なら、ページ上部に amber バナーで一覧表示 (既存のスキーマ違反バナーと同系)
+
+## 将来拡張 (v6 候補)
+
+- バックリンクパネル、静的サイトエクスポート (`specbook build`)
+- エディター補完 ([[ 補完・front-matter キー補完)、画像ペースト保存
+- 全文検索のインデックス化、Mermaid テーマ設定、フォームのカスタムウィジェット
+- Drawing のグラフページ統合、AGENTS.md 生成 (`specbook init`)

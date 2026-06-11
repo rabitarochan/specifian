@@ -58,6 +58,7 @@ node dist/cli/index.js generate typescript --out ./src/generated
 | `specbook init [--dir ./specs]` | テンプレートから specs/ を初期化 |
 | `specbook generate <generator> [--dir ./specs] [--spec <id>] [--out .]` | scaffdog テンプレートからコード生成 |
 | `specbook validate [--dir ./specs]` | `_schema.json` で front-matter を検証。違反があれば exit code 1 |
+| `specbook mcp [--dir ./specs]` | MCP サーバー (stdio) を起動。AI エージェントがスペックを読み書きできる |
 
 ## specs/ の構成ルール
 
@@ -214,6 +215,54 @@ specbook サーバーが提供する API。すべてのパスはベース URL（
   "error": "Spec not found"
 }
 ```
+
+## MCP サーバー
+
+specbook は MCP (Model Context Protocol) サーバーを内蔵しており、AI エージェント (Claude Code など) が
+スペックドキュメントを安全に読み書きできます。stdio トランスポートで動作します。
+
+### 起動
+
+```bash
+specbook mcp --dir ./specs
+```
+
+> stdout は MCP プロトコル (JSON-RPC) が占有するため、ログはすべて stderr に出力されます。
+
+### Claude Code への登録例
+
+`.mcp.json`（または Claude Code の MCP 設定）に以下を追加します。
+
+```json
+{
+  "mcpServers": {
+    "specbook": {
+      "command": "npx",
+      "args": ["specbook", "mcp", "--dir", "./specs"]
+    }
+  }
+}
+```
+
+### 提供ツール
+
+スペック ID はすべて `"category:slug"` 形式（インデックスは `tables:_`）。`content` は front-matter を含む MDX 全文です。
+
+| ツール | 説明 |
+|---|---|
+| `list_specs` | 全スペックのメタ情報 (SpecMeta[]) を返す（`_template` 除く） |
+| `read_spec` | `{ id }` → `{ meta, content }`。存在しなければエラー |
+| `write_spec` | `{ id, content }` で既存スペックを上書き保存し `{ meta, issues }` を返す |
+| `create_spec` | `{ category, slug, title? }` で新規作成。`_template.mdx` があればコピー |
+| `rename_spec` | `{ from, to }` でリネーム＋wiki リンク一括書き換え。`{ meta, rewrittenFiles }` |
+| `delete_spec` | `{ id }` で削除。`{ ok, brokenRefs }` で壊れた参照を通知 |
+| `get_refs` | `{ id }` → `{ refs }`。id を参照しているスペック ID 一覧 |
+| `search` | `{ query, limit? }` → SearchResult[]。全文検索 |
+| `get_data` | `{ category? }` → front-matter データ map |
+| `validate` | front-matter を `_schema.json` で検証し ValidationReport を返す |
+| `lint` | `{ content, category?, slug? }` で保存せず検証し `{ issues }` を返す |
+| `list_generators` | 利用可能なコード生成テンプレート名一覧 (string[]) |
+| `generate` | `{ generator, specId?, out? }` でコード生成。`{ files }` を返す |
 
 ## 開発
 

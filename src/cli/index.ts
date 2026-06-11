@@ -6,6 +6,7 @@ import { initSpecs } from '../server/init.js';
 import { loadSpecs } from '../server/store.js';
 import { runGenerator } from '../server/generate.js';
 import { validateSpecs } from '../server/validate.js';
+import { startMcpServer } from '../server/mcp.js';
 
 const VERSION = '0.1.0';
 
@@ -150,6 +151,36 @@ program
     } catch (err) {
       console.error(
         'バリデーションに失敗しました:',
+        err instanceof Error ? err.message : err,
+      );
+      process.exit(1);
+    }
+  });
+
+// mcp command
+program
+  .command('mcp')
+  .description('MCP サーバー (stdio) を起動します。AI エージェントがスペックを読み書きできます')
+  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
+  .action(async (opts: { dir: string }) => {
+    const specsDir = path.resolve(opts.dir);
+
+    if (!fs.existsSync(specsDir)) {
+      console.error(
+        `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+      );
+      console.error('ヒント: specbook init --dir <ディレクトリー> で初期化できます。');
+      process.exit(1);
+    }
+
+    // 注意: stdout は MCP プロトコルが占有するため、起動通知は必ず stderr へ。
+    console.error(`specbook MCP server (stdio) — specs: ${specsDir}`);
+
+    try {
+      await startMcpServer(specsDir);
+    } catch (err) {
+      console.error(
+        'MCP サーバーの起動に失敗しました:',
         err instanceof Error ? err.message : err,
       );
       process.exit(1);
