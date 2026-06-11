@@ -14,6 +14,7 @@ import { SpecList } from './SpecList';
 import { DataView } from './DataView';
 import { SpecLink } from './SpecLink';
 import { MermaidDiagram } from './MermaidDiagram';
+import { Drawing } from './Drawing';
 
 const WIKI_PREFIX = '#wiki:';
 
@@ -70,4 +71,5 @@ export const mdxComponents = {
   SpecList,
   DataView,
   SpecLink,
+  Drawing,
 };

@@ -224,7 +224,42 @@ specbook generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 - フォームタブへの切り替え時に現在テキストを parse。YAML が壊れている場合はエラーメッセージを出してテキストタブに留まる
 - フォーム変更のたびに `replaceFrontMatter` でテキストを更新 → 既存のデバウンスプレビューが追従
 
-## 将来拡張 (v4 候補)
+## v4 機能設計: Excalidraw による画面設計の埋め込み
+
+### コンセプト
+
+画面設計 (ワイヤーフレーム) を **Excalidraw** (`@excalidraw/excalidraw`, MIT, 完全ローカル動作) で作図し、
+スペックと同じ `specs/` 配下のサイドカーファイルとして Git 管理する。
+
+### ストレージ
+
+- `specs/<path>.excalidraw` — Excalidraw シーン JSON (serializeAsJSON 形式)。スペック走査の対象外 (.mdx のみ走査のため自然に除外)
+- watcher は `.excalidraw` の変更も `FsEvent` (specId: null) でブロードキャストする
+
+### API
+
+- `GET /api/drawings` → `DrawingMeta[]` (specs 配下の全 .excalidraw、パスは specsDir 相対 `/` 区切り)
+- `GET /api/drawings/<path>` → シーン JSON そのまま (404 if missing)。`<path>` は拡張子なし (`screens/login`)
+- `PUT /api/drawings/<path>` → body = シーン JSON を保存 (新規作成も可、親フォルダーは存在必須)。パストラバーサルガード必須
+- エラーは `{ error }` 形式
+
+### クライアント
+
+- MDX 組み込みコンポーネント `<Drawing src="screens/login" />` (src は specsDir 相対・拡張子なし):
+  - シーンを取得し Excalidraw の `exportToSvg` で **静的 SVG 描画** (閲覧時はエディターを起動しない)
+  - ホバーで「編集」ボタン → **フルスクリーン寄りのモーダル**で Excalidraw エディターを開く (langCode: "ja")
+  - 保存 → PUT → ws イベント → SVG 再描画。キャンセルで破棄
+  - ファイルが無い場合はプレースホルダー + 「図を作成」ボタン (空シーンを PUT してからエディターを開く)
+  - 外部 (VSCode 等) での変更も fs イベントで自動再描画
+- `@excalidraw/excalidraw` は **dynamic import** でメインバンドルから分離 (mermaid と同じパターン)
+- Excalidraw が要求する場合は vite.config の `define` (process.env など) を追加してよい
+
+### サンプル
+
+- `examples/specs/screens/` カテゴリー: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter に画面項目定義 + `<Drawing src="screens/login" />`) / `login.excalidraw` (ログイン画面の簡単なワイヤーフレーム)
+
+## 将来拡張 (v5 候補)
 
 - 全文検索のインデックス化 (大規模 specs 向け)、Mermaid テーマ設定
 - フォームのカスタムウィジェット (`x-widget` 拡張)
+- Drawing のグラフページ統合 (図とスペックのリンク可視化)

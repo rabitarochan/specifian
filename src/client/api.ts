@@ -14,6 +14,7 @@ import type {
   SearchResult,
   ValidationReport,
   CategorySchemaResponse,
+  DrawingMeta,
   ApiError,
 } from '@shared/types';
 
@@ -153,4 +154,20 @@ export function fetchCategorySchema(
   category: string,
 ): Promise<CategorySchemaResponse> {
   return request<CategorySchemaResponse>(`/api/schema/${category}`);
+}
+
+/** GET /api/drawings/<path> — Excalidraw シーン JSON を取得 (拡張子なしパス、404 は ApiHttpError) */
+export function fetchDrawing(path: string): Promise<unknown> {
+  return request<unknown>(`/api/drawings/${path}`);
+}
+
+/** PUT /api/drawings/<path> — Excalidraw シーン JSON を保存 (新規作成も可) */
+export function saveDrawing(
+  path: string,
+  scene: unknown,
+): Promise<DrawingMeta> {
+  return request<DrawingMeta>(`/api/drawings/${path}`, {
+    method: 'PUT',
+    body: JSON.stringify(scene),
+  });
 }

@@ -141,6 +141,12 @@ export interface UserComponentFile {
   source: string;
 }
 
+/** GET /api/drawings の 1 件 (specs 配下の Excalidraw 図) */
+export interface DrawingMeta {
+  /** specsDir 相対パス "screens/login.excalidraw" ("/" 区切り) */
+  path: string;
+}
+
 /** GET /api/schema/<category> のレスポンス。_schema.json が無いカテゴリーは schema: null */
 export interface CategorySchemaResponse {
   schema: Record<string, unknown> | null;
