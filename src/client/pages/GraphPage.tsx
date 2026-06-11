@@ -2,12 +2,11 @@
  * リンクグラフ。GET /api/graph を d3-force でレイアウトし SVG 描画する。
  * - forceLink / forceManyBody / forceCenter / forceCollide
  * - カテゴリー別に色分け、missing ノードはグレー破線
- * - クリックで遷移、ホバーで近傍ハイライト (他をディム)
+ * - クリックで右ペインにプレビュー、ホバーで近傍ハイライト (他をディム)
  * - ホイールズーム + 背景ドラッグでパン (viewBox 変換、d3-zoom 不使用)
- * - ノードドラッグで再配置
+ * - ノードドラッグで再配置 (ドラッグ時はクリック扱いしない)
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   forceCenter,
   forceCollide,
@@ -19,9 +18,9 @@ import {
   type SimulationNodeDatum,
 } from 'd3-force';
 import type { Graph, GraphNode } from '@shared/types';
-import { specRoute } from '@shared/types';
 import { fetchGraph, ApiHttpError } from '../api';
 import { categoryColor } from './categoryColor';
+import { GraphPreviewPane } from '../components/GraphPreviewPane';
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
@@ -36,10 +35,11 @@ const WIDTH = 1200;
 const HEIGHT = 800;
 
 export function GraphPage() {
-  const navigate = useNavigate();
   const [graph, setGraph] = useState<Graph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, forceRender] = useState(0);
+  // 選択中のノード ID (右ペインのプレビュー対象)。null なら全幅表示
+  const [selected, setSelected] = useState<string | null>(null);
 
   const nodesRef = useRef<SimNode[]>([]);
   const linksRef = useRef<SimLink[]>([]);
@@ -54,6 +54,9 @@ export function GraphPage() {
     | { kind: 'node'; node: SimNode }
     | null
   >(null);
+  // ノードドラッグ判定: pointerdown 位置と、閾値を超えて動いたか
+  const pointerStart = useRef<{ x: number; y: number } | null>(null);
+  const movedRef = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -110,6 +113,16 @@ export function GraphPage() {
     };
   }, [graph]);
 
+  // Escape でプレビューを閉じる
+  useEffect(() => {
+    if (selected === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelected(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selected]);
+
   // 近傍集合 (ハイライト用)。graph.edges から直接構築する。
   const neighbors = useMemo(() => {
     const map = new Map<string, Set<string>>();
@@ -126,6 +139,8 @@ export function GraphPage() {
   const isDimmed = (id: string): boolean => {
     if (!hovered) return false;
     if (id === hovered) return false;
+    // 選択中のノードはホバー時もディムしない (常に全不透明)
+    if (id === selected) return false;
     return !neighbors.get(hovered)?.has(id);
   };
 
@@ -168,6 +183,9 @@ export function GraphPage() {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     dragState.current = { kind: 'node', node };
+    // ドラッグ判定をリセットし、開始位置を記録する
+    pointerStart.current = { x: e.clientX, y: e.clientY };
+    movedRef.current = false;
     simRef.current?.alphaTarget(0.3).restart();
     node.fx = node.x;
     node.fy = node.y;
@@ -184,6 +202,13 @@ export function GraphPage() {
       const dy = ((e.clientY - ds.startY) / rect.height) * ds.origin.h;
       setView({ ...ds.origin, x: ds.origin.x - dx, y: ds.origin.y - dy });
     } else {
+      // 累積移動距離が閾値 (約 5px) を超えたらドラッグとみなし、クリック遷移を抑止する
+      const start = pointerStart.current;
+      if (start && !movedRef.current) {
+        const dx = e.clientX - start.x;
+        const dy = e.clientY - start.y;
+        if (dx * dx + dy * dy > 25) movedRef.current = true;
+      }
       const p = toUser(e.clientX, e.clientY);
       ds.node.fx = p.x;
       ds.node.fy = p.y;
@@ -221,9 +246,11 @@ export function GraphPage() {
       <header className="sb-page-bar">
         <h1 className="sb-page-bar__title">リンクグラフ</h1>
         <span className="sb-graph-hint">
-          ドラッグでノード移動 / 背景ドラッグでパン / ホイールでズーム
+          クリックでプレビュー / ドラッグでノード移動 / 背景ドラッグでパン /
+          ホイールでズーム
         </span>
       </header>
+      <div className="sb-graph-split">
       <div className="sb-graph-canvas">
         <svg
           ref={svgRef}
@@ -258,6 +285,7 @@ export function GraphPage() {
             {nodes.map((n) => {
               const dim = isDimmed(n.id);
               const color = n.missing ? '#9ca3af' : categoryColor(n.category);
+              const isSelected = n.id === selected;
               return (
                 <g
                   key={n.id}
@@ -268,10 +296,20 @@ export function GraphPage() {
                   onMouseEnter={() => setHovered(n.id)}
                   onMouseLeave={() => setHovered(null)}
                   onClick={() => {
-                    if (!n.missing) navigate(specRoute(n.id));
+                    // ドラッグ直後のクリックは無視する
+                    if (movedRef.current) return;
+                    if (!n.missing) setSelected(n.id);
                   }}
                   style={{ cursor: n.missing ? 'default' : 'pointer' }}
                 >
+                  {isSelected && (
+                    <circle
+                      r={19}
+                      fill="none"
+                      stroke={color}
+                      strokeWidth={2.5}
+                    />
+                  )}
                   <circle
                     r={14}
                     fill={n.missing ? 'transparent' : color}
@@ -287,6 +325,16 @@ export function GraphPage() {
             })}
           </g>
         </svg>
+      </div>
+        {selected !== null && (
+          <GraphPreviewPane
+            id={selected}
+            title={
+              nodes.find((n) => n.id === selected)?.title ?? selected
+            }
+            onClose={() => setSelected(null)}
+          />
+        )}
       </div>
     </div>
   );
