@@ -5,14 +5,40 @@ table:
   name: posts
   description: ユーザー投稿情報
   columns:
-    - { name: id, type: bigint, primaryKey: true, description: 主キー }
-    - { name: user_id, type: bigint, nullable: false, description: "ユーザー ID（users テーブルへの外部キー）" }
-    - { name: title, type: varchar(200), nullable: false, description: 投稿タイトル }
-    - { name: body, type: text, nullable: false, description: 投稿本文 }
-    - { name: status, type: varchar(20), nullable: false, default: "'draft'", description: 投稿ステータス（draft / published / archived） }
-    - { name: published_at, type: timestamp, nullable: true, description: 公開日時（公開前は NULL） }
-    - { name: created_at, type: timestamp, nullable: false, description: 作成日時 }
-    - { name: updated_at, type: timestamp, nullable: false, description: 更新日時 }
+    - name: id
+      type: bigint
+      primaryKey: true
+      description: 主キー
+    - name: user_id
+      type: bigint
+      nullable: false
+      description: ユーザー ID（users テーブルへの外部キー）
+    - name: title
+      type: varchar(200)
+      nullable: false
+      description: 投稿タイトル
+    - name: body
+      type: text
+      nullable: false
+      description: 投稿本文
+    - name: status
+      type: varchar(20)
+      nullable: false
+      default: "'draft'"
+      description: 投稿ステータス（draft / published / archived）
+    - name: published_at
+      type: timestamp
+      nullable: true
+      description: 公開日時（公開前は NULL）
+    - name: created_at
+      type: timestamp
+      nullable: false
+      description: 作成日時
+    - name: updated_at
+      type: timestamp
+      nullable: false
+      description: 更新日時
+      primaryKey: false
 ---
 
 # {title}
