@@ -241,7 +241,7 @@ npm start
 | 言語 | TypeScript (strict mode), ESM |
 | CLI | commander |
 | サーバー | Express 4 + WebSocket (ws) + ファイル監視 (chokidar) + YAML 解析 (gray-matter) |
-| クライアント | React 18 + React Router 6 + Vite 5 |
+| クライアント | React 18 + React Router 6 + Vite 8 |
 | MDX | @mdx-js/mdx v3 + remark プラグイン |
 | エディター | @uiw/react-codemirror |
 | グラフ可視化 | d3-force |
