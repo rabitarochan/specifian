@@ -8,6 +8,11 @@ import type { SpecMeta } from '@shared/types';
 export interface MdxContextValue {
   specs: SpecMeta[];
   category: string;
+  /**
+   * wiki リンクのクリックを通常遷移の代わりに処理するハンドラー。
+   * グラフのプレビューペインなど、リンク先をその場で表示したい文脈で指定する。
+   */
+  onWikiNavigate?: (id: string) => void;
 }
 
 const MdxContext = createContext<MdxContextValue>({ specs: [], category: '' });

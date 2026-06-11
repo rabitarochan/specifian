@@ -18,9 +18,11 @@ interface Props {
   /** グラフが解決しているタイトル (取得前のヘッダー表示用) */
   title: string;
   onClose: () => void;
+  /** プレビュー内の wiki リンクで選択スペックを切り替える */
+  onSelect: (id: string) => void;
 }
 
-export function GraphPreviewPane({ id, title, onClose }: Props) {
+export function GraphPreviewPane({ id, title, onClose, onSelect }: Props) {
   const navigate = useNavigate();
   const { specs } = useSpecs();
   const parsed = parseSpecId(id);
@@ -97,6 +99,7 @@ export function GraphPreviewPane({ id, title, onClose }: Props) {
             specs={specs}
             category={parsed.category}
             slug={parsed.slug}
+            onWikiNavigate={onSelect}
           />
         )}
       </div>
