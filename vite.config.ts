@@ -13,8 +13,10 @@ export default defineConfig({
   server: {
     port: 5180,
     proxy: {
-      '/api': 'http://localhost:4399',
-      '/ws': { target: 'ws://localhost:4399', ws: true },
+      // 前方一致だと /api.ts (src/client/api.ts のモジュール URL) まで
+      // プロキシされてしまうため、正規表現キーで API パスだけに限定する
+      '^/api/': 'http://localhost:4399',
+      '^/ws$': { target: 'ws://localhost:4399', ws: true },
     },
   },
   build: {
