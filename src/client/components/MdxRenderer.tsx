@@ -17,9 +17,11 @@ interface Props {
   specs: SpecMeta[];
   category: string;
   slug: string;
+  /** wiki リンクのクリックを通常遷移の代わりに処理する (プレビューペイン用) */
+  onWikiNavigate?: (id: string) => void;
 }
 
-export function MdxRenderer({ content, specs, category, slug }: Props) {
+export function MdxRenderer({ content, specs, category, slug, onWikiNavigate }: Props) {
   const { Content, error, loading } = useMdx(content, { specs, category, slug });
   const {
     components: userComponents,
@@ -46,7 +48,7 @@ export function MdxRenderer({ content, specs, category, slug }: Props) {
   if (!Content) return null;
 
   return (
-    <MdxProvider value={{ specs, category }}>
+    <MdxProvider value={{ specs, category, onWikiNavigate }}>
       {userErrors.length > 0 && (
         <div className="sb-error-panel" role="alert">
           <div className="sb-error-panel__title">

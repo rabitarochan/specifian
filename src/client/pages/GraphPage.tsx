@@ -333,6 +333,7 @@ export function GraphPage() {
               nodes.find((n) => n.id === selected)?.title ?? selected
             }
             onClose={() => setSelected(null)}
+            onSelect={setSelected}
           />
         )}
       </div>
