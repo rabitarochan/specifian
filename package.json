@@ -40,7 +40,8 @@
     "build": "tsup && vite build",
     "typecheck": "tsc --noEmit",
     "start": "node dist/cli/index.js serve --dir examples/specs",
-    "prepublishOnly": "npm run typecheck && npm run build"
+    "prepublishOnly": "npm run typecheck && npm run build",
+    "publish:beta": "npm version prerelease --preid=beta && npm publish --tag beta"
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.0",
