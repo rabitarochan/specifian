@@ -65,7 +65,7 @@ export function Home() {
   return (
     <article className="sb-content">
       <div className="sb-prose">
-        <h1>specbook へようこそ</h1>
+        <h1>specifian へようこそ</h1>
         <p>
           <code>specs/</code> 配下の MDX スペックを表示・編集できます。
           左のサイドバーからカテゴリーやスペックを選んでください。

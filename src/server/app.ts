@@ -23,12 +23,12 @@ export interface ServerOptions {
   port: number;
 }
 
-export interface SpecbookServer {
+export interface SpecifianServer {
   server: http.Server;
   close: () => void;
 }
 
-export function createServer(options: ServerOptions): SpecbookServer {
+export function createServer(options: ServerOptions): SpecifianServer {
   const { specsDir } = options;
 
   const app = express();
@@ -87,9 +87,9 @@ export function createServer(options: ServerOptions): SpecbookServer {
   return { server, close };
 }
 
-export function startServer(options: ServerOptions): Promise<SpecbookServer> {
+export function startServer(options: ServerOptions): Promise<SpecifianServer> {
   return new Promise((resolve, reject) => {
-    let srv: SpecbookServer;
+    let srv: SpecifianServer;
     try {
       srv = createServer(options);
     } catch (err) {
