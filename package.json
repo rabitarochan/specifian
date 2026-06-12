@@ -2,8 +2,27 @@
   "name": "specifian",
   "version": "0.1.0",
   "description": "Spec-as-code documentation tool: render and edit local MDX specs with front-matter as structured design data",
+  "keywords": [
+    "documentation",
+    "mdx",
+    "specification",
+    "design-docs",
+    "frontmatter",
+    "wiki",
+    "scaffolding",
+    "mcp"
+  ],
+  "author": "Kengo Asamizu",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rabitarochan/specifian.git"
+  },
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "engines": {
     "node": ">=20"
   },
@@ -20,7 +39,8 @@
     "dev:client": "vite",
     "build": "tsup && vite build",
     "typecheck": "tsc --noEmit",
-    "start": "node dist/cli/index.js serve --dir examples/specs"
+    "start": "node dist/cli/index.js serve --dir examples/specs",
+    "prepublishOnly": "npm run typecheck && npm run build"
   },
   "dependencies": {
     "@mdx-js/mdx": "^3.1.0",
