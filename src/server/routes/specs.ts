@@ -62,15 +62,22 @@ export function specsRouter(specsDir: string): Router {
 
     // Try to use template
     let content: string;
-    const templatePath = path.join(specsDir, ...categoryParts, '_template.mdx');
-    try {
-      await fs.access(templatePath);
-      const templateContent = await fs.readFile(templatePath, 'utf-8');
-      const parsed = matter(templateContent);
-      parsed.data['title'] = title;
-      content = matter.stringify(parsed.content, parsed.data);
-    } catch {
-      content = `---\ntitle: ${title}\n---\n\n# ${title}\n`;
+    if (slug === '_') {
+      // カテゴリーインデックスは _template.mdx をコピーせず、
+      // categories.ts の新規カテゴリーと同じ SpecList 入りデフォルトにする
+      const indexTitle = body.title ?? (category || 'ホーム');
+      content = `---\ntitle: ${indexTitle}\n---\n\n# ${indexTitle}\n\n<SpecList />\n`;
+    } else {
+      const templatePath = path.join(specsDir, ...categoryParts, '_template.mdx');
+      try {
+        await fs.access(templatePath);
+        const templateContent = await fs.readFile(templatePath, 'utf-8');
+        const parsed = matter(templateContent);
+        parsed.data['title'] = title;
+        content = matter.stringify(parsed.content, parsed.data);
+      } catch {
+        content = `---\ntitle: ${title}\n---\n\n# ${title}\n`;
+      }
     }
 
     try {

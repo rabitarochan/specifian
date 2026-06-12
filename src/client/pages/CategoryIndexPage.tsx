@@ -1,19 +1,28 @@
 /**
  * カテゴリーインデックス。
  * `<category>/_.mdx` があれば描画、なければ自動生成の SpecList を表示する。
+ * ヘッダーのボタンからインデックスの編集 (無ければ作成して編集) ができる。
  */
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { SpecDetail } from '@shared/types';
-import { fetchSpec, ApiHttpError } from '../api';
+import { fetchSpec, createSpec, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
+import { useToast } from '../components/Toast';
 import { MdxRenderer } from '../components/MdxRenderer';
 import { MdxProvider } from '../mdx/MdxContext';
 import { SpecList } from '../components/mdx/SpecList';
 
 export function CategoryIndexPage({ category }: { category: string }) {
-  const { specs } = useSpecs();
+  const { specs, refetch } = useSpecs();
+  const navigate = useNavigate();
+  const { show } = useToast();
   const [detail, setDetail] = useState<SpecDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+
+  /** /specs/<category>/_ のルート ("" カテゴリー = ルートインデックス) */
+  const indexRoute = category ? `/specs/${category}/_` : '/specs/_';
 
   useEffect(() => {
     let active = true;
@@ -38,6 +47,23 @@ export function CategoryIndexPage({ category }: { category: string }) {
     };
   }, [category]);
 
+  /** _.mdx が無いカテゴリーで、デフォルトのインデックスを作成して編集へ */
+  const createAndEdit = async () => {
+    setCreating(true);
+    try {
+      await createSpec({ category, slug: '_', title: category || 'ホーム' });
+      await refetch();
+      navigate(`${indexRoute}?edit=1`);
+    } catch (err) {
+      show(
+        err instanceof Error
+          ? `インデックスの作成に失敗しました: ${err.message}`
+          : 'インデックスの作成に失敗しました',
+      );
+      setCreating(false);
+    }
+  };
+
   if (loading) return <div className="sb-loading">読み込み中…</div>;
 
   if (detail) {
@@ -45,6 +71,14 @@ export function CategoryIndexPage({ category }: { category: string }) {
       <article className="sb-content">
         <header className="sb-page-bar">
           <h1 className="sb-page-bar__title">{detail.meta.title}</h1>
+          <div className="sb-page-bar__actions">
+            <button
+              className="sb-btn"
+              onClick={() => navigate(`${indexRoute}?edit=1`)}
+            >
+              インデックスを編集
+            </button>
+          </div>
         </header>
         <MdxRenderer
           content={detail.content}
@@ -61,6 +95,11 @@ export function CategoryIndexPage({ category }: { category: string }) {
     <article className="sb-content">
       <header className="sb-page-bar">
         <h1 className="sb-page-bar__title">{category}</h1>
+        <div className="sb-page-bar__actions">
+          <button className="sb-btn" onClick={createAndEdit} disabled={creating}>
+            {creating ? '作成中…' : 'インデックスを作成'}
+          </button>
+        </div>
       </header>
       <div className="sb-prose">
         <MdxProvider value={{ specs, category }}>
