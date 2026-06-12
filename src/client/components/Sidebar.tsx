@@ -255,7 +255,7 @@ export function Sidebar() {
     <aside className="sb-sidebar">
       <div className="sb-sidebar__brand">
         <Link to="/" className="sb-sidebar__brand-link">
-          specbook
+          specifian
         </Link>
       </div>
 

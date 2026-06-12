@@ -1,7 +1,7 @@
 /**
- * mcp.ts — specbook の MCP サーバー (stdio トランスポート)。
+ * mcp.ts — specifian の MCP サーバー (stdio トランスポート)。
  *
- * AI エージェント (Claude Code 等) が specbook のスペックドキュメントを
+ * AI エージェント (Claude Code 等) が specifian のスペックドキュメントを
  * MCP ツール経由で読み書きできるようにする。
  *
  * 重要: stdout は MCP (JSON-RPC) プロトコルに占有されているため、
@@ -93,13 +93,13 @@ async function findMeta(specsDir: string, id: string): Promise<SpecMeta | null> 
 // ─── サーバー起動 ──────────────────────────────────────────────────────────────
 
 /**
- * specbook の MCP サーバーを stdio トランスポートで起動する。
+ * specifian の MCP サーバーを stdio トランスポートで起動する。
  * Promise はトランスポートが閉じる (= プロセス終了相当) まで解決しない。
  *
  * @param specsDir - specs ディレクトリーの絶対パス (呼び出し側で存在確認済みを想定)
  */
 export async function startMcpServer(specsDir: string): Promise<void> {
-  const server = new McpServer({ name: 'specbook', version: '0.1.0' });
+  const server = new McpServer({ name: 'specifian', version: '0.1.0' });
 
   // ── list_specs ──────────────────────────────────────────────────────────
   server.registerTool(

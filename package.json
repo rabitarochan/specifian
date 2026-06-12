@@ -1,5 +1,5 @@
 {
-  "name": "specbook",
+  "name": "specifian",
   "version": "0.1.0",
   "description": "Spec-as-code documentation tool: render and edit local MDX specs with front-matter as structured design data",
   "type": "module",
@@ -8,7 +8,7 @@
     "node": ">=20"
   },
   "bin": {
-    "specbook": "./dist/cli/index.js"
+    "specifian": "./dist/cli/index.js"
   },
   "files": [
     "dist",

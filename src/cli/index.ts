@@ -11,7 +11,7 @@ import { startMcpServer } from '../server/mcp.js';
 const VERSION = '0.1.0';
 
 program
-  .name('specbook')
+  .name('specifian')
   .version(VERSION)
   .description('Storybook ライクな MDX スペック管理ツール');
 
@@ -30,11 +30,11 @@ program
       console.error(
         `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
       );
-      console.error('ヒント: specbook init --dir <ディレクトリー> で初期化できます。');
+      console.error('ヒント: specifian init --dir <ディレクトリー> で初期化できます。');
       process.exit(1);
     }
 
-    console.log(`\n🗒  specbook v${VERSION}`);
+    console.log(`\n🗒  specifian v${VERSION}`);
     console.log(`📂 スペックディレクトリー: ${specsDir}`);
     console.log(`🚀 サーバーを起動しています... http://localhost:${port}\n`);
 
@@ -64,7 +64,7 @@ program
       await initSpecs(targetDir);
       console.log(`✅ 初期化完了: ${targetDir}`);
       console.log('次のコマンドでサーバーを起動できます:');
-      console.log(`  specbook serve --dir ${opts.dir}`);
+      console.log(`  specifian serve --dir ${opts.dir}`);
     } catch (err) {
       console.error('初期化に失敗しました:', err instanceof Error ? err.message : err);
       process.exit(1);
@@ -169,12 +169,12 @@ program
       console.error(
         `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
       );
-      console.error('ヒント: specbook init --dir <ディレクトリー> で初期化できます。');
+      console.error('ヒント: specifian init --dir <ディレクトリー> で初期化できます。');
       process.exit(1);
     }
 
     // 注意: stdout は MCP プロトコルが占有するため、起動通知は必ず stderr へ。
-    console.error(`specbook MCP server (stdio) — specs: ${specsDir}`);
+    console.error(`specifian MCP server (stdio) — specs: ${specsDir}`);
 
     try {
       await startMcpServer(specsDir);

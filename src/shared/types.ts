@@ -1,5 +1,5 @@
 /**
- * specbook 共有型定義 — API 契約の正。
+ * specifian 共有型定義 — API 契約の正。
  * サーバー (src/server) とクライアント (src/client) の両方から import する。
  * 変更する場合は docs/DESIGN.md と両実装の整合を保つこと。
  */
