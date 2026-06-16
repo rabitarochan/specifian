@@ -60,6 +60,7 @@ specifian/
 - `<category>/<slug>.mdx` = a **spec**. The ID is `<category>:<slug>` (e.g. `tables:users`)
 - `<category>/_.mdx` = the category's **index page** (equivalent to index.html). slug is `_`
 - `<category>/_template.mdx` = the **template** used when creating a new spec. Excluded from listings and the graph.
+- `<category>/_guide.md` = the **authoring guide** for that category (prose conventions + what to record). Also `.specs/_guide.md` for project-wide guidance. Excluded from spec traversal (not treated as a spec).
 - `.specs/_generators/*.md` = scaffdog-format **code generation templates** (not treated as specs)
 - front-matter (YAML) follows a free schema. `title` and `description` are reserved keys interpreted by the UI.
 
@@ -304,9 +305,64 @@ Also provide "document restructuring" operations (rename, delete) needed by both
   - Delete: GET /api/refs to show referencing specs ("Referenced by N spec(s)" + list) → confirm → DELETE. Navigates home if the deleted spec is currently displayed.
 - On save: if `SaveSpecResponse.issues` is non-empty, display a list in an amber banner at the top of the page (consistent with the existing schema violation banner).
 
-## Future Extensions (v6 candidates)
+## v6 Feature Design: Authoring Guides (`_guide.md`)
+
+### Concept
+
+Each category (and the root) can have a `_guide.md` — a plain Markdown file that describes **what to record** and the **design conventions** for that category. It serves both human authors and AI agents (e.g. Claude Code via MCP). The approach mirrors `_schema.json`: it is a reserved side-file excluded from spec traversal and served via dedicated endpoints.
+
+### Server
+
+- **`src/server/guide.ts`** — `loadGuide(specsDir, category?): Promise<GuideFile | null>`. Reads `<category>/_guide.md` (or `_guide.md` at root when `category` is omitted). Returns `{ guide: string, title?, description? }` (title/description extracted from the first `#` heading and optional front-matter).
+- **`store.ts` scan exclusion** — `_guide.md` is added to the reserved-filename set, so `scanDir` never emits it as a spec.
+- **Routes** — `GET /api/guide/<categoryPath>` and `GET /api/guide` (root) return `{ guide, title?, description? }` (null guide → 404). `PUT /api/guide/<categoryPath>` writes the file (parent directory must exist; path traversal guard required).
+- **Watcher** — `_guide.md` changes are broadcast as `FsEvent` with `specId: null` (same pattern as `_components` and `.excalidraw`), so the client can invalidate its guide cache.
+
+### MCP Tools
+
+Two new tools exposed via `specifian mcp`:
+
+| Tool | Input | Output |
+|---|---|---|
+| `get_guide` | `{ category? }` | `{ guide, title?, description? }` — the category's `_guide.md` Markdown. Omit `category` for the root guide. |
+| `list_guides` | _(none)_ | `{ category, hasGuide, hasSchema }[]` for the root and all categories — lets agents discover the project structure before authoring. |
+
+`create_spec` is extended to return `{ meta, guide? }`, where `guide` is the category's guide content (if present), so agents have the conventions at hand immediately after creating a spec.
+
+### Category Scaffold
+
+When a new category is created (Web UI or `POST /api/categories`), a placeholder `_guide.md` is written alongside the default `_.mdx` and `_template.mdx`:
+
+```markdown
+# <Category> Guide
+
+Describe what to record in this category and the design conventions.
+```
+
+### Web UI
+
+- **Home page** — renders the root `_guide.md` below the `_.mdx` content (or as the main content when `_.mdx` is absent).
+- **Category index page** — renders the category `_guide.md` below the `_.mdx` content (or as the main content).
+- **Editor** — adds a **[Guide]** tab to the left pane when editing a spec, showing the category guide as read-only reference. The root guide appears on the Home/root editor.
+- Style: rendered as standard Markdown prose; visually distinct from spec content (e.g., light background tint).
+
+### `specifian agents` — Static AGENTS.md Generator
+
+```
+specifian agents [--dir ./.specs] [--out ./AGENTS.md]
+```
+
+Generates a static `AGENTS.md` in the project root. It is a **static how-to**: it tells agents how to register the MCP server and instructs them to call `list_guides` / `get_guide` at runtime to discover categories and read conventions before authoring. Because discovery is dynamic (MCP at runtime), the file never goes stale when categories are added — there is no need to regenerate it.
+
+The generator (`src/cli/agents.ts`) reads the current guides to embed a brief summary of existing categories, then emits:
+1. How to register the `specifian` MCP server in `.mcp.json`.
+2. A usage workflow: `list_guides` → pick category → `get_guide` → `create_spec` / `write_spec`.
+3. A note that the category list is live via MCP and `AGENTS.md` does not need to be regenerated when categories change.
+
+## Future Extensions (v7 candidates)
 
 - Backlink panel, static site export (`specifian build`)
 - Editor autocomplete (`[[` completion, front-matter key completion), image paste and save
 - Full-text search indexing, Mermaid theme configuration, custom form widgets
-- Drawing integration in the graph page, AGENTS.md generation (`specifian init`)
+- Drawing integration in the graph page
+- ~~AGENTS.md generation (`specifian init`)~~ — implemented as `specifian agents` (see v6 Feature Design above)
