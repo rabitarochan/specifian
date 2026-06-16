@@ -1555,3 +1555,65 @@ select.sb-cell-input {
   justify-content: space-between;
   gap: 8px;
 }
+
+/* ===== Authoring guide panel ===== */
+.sb-guide-panel {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-weak);
+  border-radius: var(--radius);
+  margin: 0 0 20px;
+}
+.sb-guide-panel__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.sb-guide-panel__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  border: none;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.sb-guide-panel__chevron {
+  color: var(--accent);
+  font-size: 12px;
+}
+.sb-guide-panel__title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-hover);
+}
+.sb-guide-panel__body {
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  padding: 12px 16px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.sb-guide-panel__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+.sb-guide-panel__editor {
+  height: 320px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.sb-guide-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
