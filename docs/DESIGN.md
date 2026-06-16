@@ -1,312 +1,312 @@
-# specifian 設計ドキュメント
+# specifian Design Document
 
-Storybook のように、ローカルの `specs/` 配下の `.mdx` ファイルをドキュメントとして表示・編集する Web ツール。
-front-matter を「構造化された設計データ」として扱い、React コンポーネントから参照したり、API / コード生成に活用できる。
+A web tool that displays and edits `.mdx` files under a local `specs/` directory as documentation, similar to Storybook.
+It treats front-matter as "structured design data" that can be referenced from React components and leveraged for API responses and code generation.
 
-## コンセプト
+## Concept
 
-- **Markdown (MDX) がソース・オブ・トゥルース**。Git で管理でき、VSCode でも Web UI でも編集できる。
-- **front-matter = 設計データ**。MDX 本文から `data` として参照でき、API で一括取得でき、scaffdog テンプレートでコード生成できる。
-- **どのプロジェクトにも適用可能**。`specs/` 配下のフォルダー構成は自由。
+- **Markdown (MDX) is the source of truth.** Managed with Git, editable in both VSCode and the Web UI.
+- **front-matter = design data.** Accessible as `data` from the MDX body, retrievable in bulk via the API, and usable for code generation with scaffdog templates.
+- **Applicable to any project.** The folder structure under `specs/` is completely free-form.
 
-## 技術スタック
+## Tech Stack
 
-| 領域 | 技術 |
+| Area | Technology |
 |---|---|
-| 言語 | TypeScript (strict), ESM (`"type": "module"`) |
+| Language | TypeScript (strict), ESM (`"type": "module"`) |
 | CLI | commander |
-| サーバー | Express 4 + ws (WebSocket) + chokidar (ファイル監視) + gray-matter |
-| クライアント | React 18 + react-router-dom 6 + Vite 8 |
-| MDX | @mdx-js/mdx v3 ランタイム評価 (`evaluate`) + remark-gfm + remark-frontmatter + remark-mdx-frontmatter |
-| エディター | @uiw/react-codemirror + @codemirror/lang-markdown |
-| グラフ | d3-force (SVG 描画は自前 React コンポーネント) |
-| コード生成 | @scaffdog/engine |
-| ビルド | tsup (CLI/server → dist/), vite build (client → dist/client) |
+| Server | Express 4 + ws (WebSocket) + chokidar (file watching) + gray-matter |
+| Client | React 18 + react-router-dom 6 + Vite 8 |
+| MDX | @mdx-js/mdx v3 runtime evaluation (`evaluate`) + remark-gfm + remark-frontmatter + remark-mdx-frontmatter |
+| Editor | @uiw/react-codemirror + @codemirror/lang-markdown |
+| Graph | d3-force (SVG rendering via custom React components) |
+| Code generation | @scaffdog/engine |
+| Build | tsup (CLI/server → dist/), vite build (client → dist/client) |
 
-Node >= 20。Windows 対応必須 (パス区切りは内部的に常に `/` へ正規化)。
+Node >= 20. Windows support is required (paths are always normalized to `/` internally).
 
-## ディレクトリ構成 (このリポジトリー)
+## Directory Structure (this repository)
 
 ```
 specifian/
   package.json / tsconfig.json / tsup.config.ts / vite.config.ts
   docs/DESIGN.md
   src/
-    shared/types.ts        # API 契約・共有型 (サーバー/クライアント両方から import)
-    cli/index.ts           # bin エントリー (serve / init / generate)
-    server/                # Express サーバー (担当: server agent)
-      app.ts               # createApp(specsDir): Express app + ws のセットアップ
-      store.ts             # specs ディレクトリーの走査・SpecMeta 構築・キャッシュ
-      watcher.ts           # chokidar -> ws ブロードキャスト
-      routes/              # API ルート
-      generate.ts          # scaffdog エンジンによるコード生成
-      init.ts              # specifian init (examples/specs をコピー)
-    client/                # React アプリ (担当: client agent)
+    shared/types.ts        # API contract & shared types (imported by both server and client)
+    cli/index.ts           # bin entry point (serve / init / generate)
+    server/                # Express server (owned by: server agent)
+      app.ts               # createApp(specsDir): Express app + ws setup
+      store.ts             # specs directory traversal, SpecMeta construction, and caching
+      watcher.ts           # chokidar -> ws broadcast
+      routes/              # API routes
+      generate.ts          # code generation via scaffdog engine
+      init.ts              # specifian init (copies examples/specs)
+    client/                # React app (owned by: client agent)
       index.html
       main.tsx / App.tsx
-      api.ts               # fetch ラッパー (types.ts の契約に従う)
-      ws.ts                # WebSocket 購読
-      mdx/                 # MDX ランタイムコンパイル (evaluate + remark プラグイン)
-      components/          # 組み込みコンポーネント (TableDefinition, SpecList, ...)
+      api.ts               # fetch wrapper (follows types.ts contract)
+      ws.ts                # WebSocket subscription
+      mdx/                 # MDX runtime compilation (evaluate + remark plugins)
+      components/          # built-in components (TableDefinition, SpecList, ...)
       pages/               # Home / SpecPage / GraphPage
       styles/
-  examples/specs/          # サンプルコンテンツ (担当: content agent。init のテンプレート兼開発用)
+  examples/specs/          # sample content (owned by: content agent; serves as both init template and dev fixture)
   README.md
 ```
 
-## specs/ のルール (ユーザーのプロジェクト側)
+## specs/ Rules (user's project side)
 
-- `specs/` 配下の任意の深さのフォルダー = **カテゴリー** (例: `tables`, `api/v1`)
-- `<category>/<slug>.mdx` = **スペック**。ID は `<category>:<slug>` (例: `tables:users`)
-- `<category>/_.mdx` = カテゴリーの **インデックスページ** (index.html 相当)。slug は `_`
-- `<category>/_template.mdx` = 新規スペック作成時の **テンプレート**。一覧・グラフから除外
-- `specs/_generators/*.md` = scaffdog 形式の **コード生成テンプレート** (スペック扱いしない)
-- front-matter (YAML) は自由スキーマ。`title` / `description` は UI が解釈する予約キー
+- Any folder at any depth under `specs/` = a **category** (e.g. `tables`, `api/v1`)
+- `<category>/<slug>.mdx` = a **spec**. The ID is `<category>:<slug>` (e.g. `tables:users`)
+- `<category>/_.mdx` = the category's **index page** (equivalent to index.html). slug is `_`
+- `<category>/_template.mdx` = the **template** used when creating a new spec. Excluded from listings and the graph.
+- `specs/_generators/*.md` = scaffdog-format **code generation templates** (not treated as specs)
+- front-matter (YAML) follows a free schema. `title` and `description` are reserved keys interpreted by the UI.
 
-## wiki リンク
+## Wiki Links
 
-- 記法: `[[tables:users]]` または `[[tables:users|表示名]]`
-- `[[tables:users]]` → `specs/tables/users.mdx` へのリンク (クライアントルート `/specs/tables/users`)
-- `[[tables:_]]` でカテゴリーインデックスへのリンクも可
-- 抽出 (サーバー側・グラフ用): 正規表現 `/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g`。
-  ただしコードフェンス内・インラインコード内は除外する
-- 描画 (クライアント側): text ノードを走査して link 要素へ置換する remark プラグイン
+- Syntax: `[[tables:users]]` or `[[tables:users|display name]]`
+- `[[tables:users]]` → links to `specs/tables/users.mdx` (client route `/specs/tables/users`)
+- `[[tables:_]]` can also link to a category index
+- Extraction (server-side, for graph): regex `/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g`.
+  Excludes matches inside code fences and inline code.
+- Rendering (client-side): a remark plugin that traverses text nodes and replaces them with link elements.
 
-## API 契約 (src/shared/types.ts が正)
+## API Contract (`src/shared/types.ts` is authoritative)
 
-ベース: `http://localhost:<port>`。カテゴリーはネスト可のためワイルドカードルートを使う。
-すべての path/category/id はスラッシュ `/` 区切り。
+Base: `http://localhost:<port>`. Categories can be nested, so wildcard routes are used.
+All paths, categories, and IDs use `/` as the separator.
 
-| メソッド/パス | 説明 |
+| Method / Path | Description |
 |---|---|
-| `GET /api/specs` | 全 SpecMeta 一覧 (`_template` 除く) |
-| `GET /api/specs/<categoryPath>/<slug>` | 1 件取得 → `{ meta: SpecMeta, content: string }` (content は front-matter 込みの生テキスト) |
-| `PUT /api/specs/<categoryPath>/<slug>` | body `{ content: string }` で保存 → `{ meta }`。存在しないパスは 404 |
-| `POST /api/specs` | body `{ category, slug, title? }`。`<category>/_template.mdx` があればコピー (front-matter の title を差し替え)、なければ最小テンプレート。409 if exists |
-| `POST /api/categories` | body `{ path }`。フォルダー作成 + デフォルト `_.mdx` / `_template.mdx` 生成。409 if exists |
-| `GET /api/data` | `{ [category]: { [slug]: frontmatter } }` 全データ (`_template` 除く、`_` 含む) |
+| `GET /api/specs` | List all SpecMeta entries (excluding `_template`) |
+| `GET /api/specs/<categoryPath>/<slug>` | Fetch one spec → `{ meta: SpecMeta, content: string }` (content is the raw text including front-matter) |
+| `PUT /api/specs/<categoryPath>/<slug>` | Save with body `{ content: string }` → `{ meta }`. Returns 404 for non-existent paths. |
+| `POST /api/specs` | body `{ category, slug, title? }`. Copies `<category>/_template.mdx` if it exists (replacing front-matter title); otherwise uses a minimal template. Returns 409 if already exists. |
+| `POST /api/categories` | body `{ path }`. Creates a folder and generates a default `_.mdx` / `_template.mdx`. Returns 409 if already exists. |
+| `GET /api/data` | `{ [category]: { [slug]: frontmatter } }` — all data (excluding `_template`, including `_`) |
 | `GET /api/data/<categoryPath>` | `{ [slug]: frontmatter }` |
-| `GET /api/graph` | `{ nodes: GraphNode[], edges: GraphEdge[] }` (wiki リンクから構築。解決できないリンク先は `missing: true` のノードとして含める) |
-| `GET /api/generators` | 利用可能なジェネレーター名一覧 |
-| `POST /api/generate` | body `{ generator, specId?, out? }` → `{ files: { path, content }[] }` (out 指定時は書き込みも行う) |
-| `WS /ws` | `{ type: 'fs', event: 'add'\|'change'\|'unlink', specId, path }` をブロードキャスト |
+| `GET /api/graph` | `{ nodes: GraphNode[], edges: GraphEdge[] }` (built from wiki links; unresolvable link targets are included as nodes with `missing: true`) |
+| `GET /api/generators` | List of available generator names |
+| `POST /api/generate` | body `{ generator, specId?, out? }` → `{ files: { path, content }[] }` (also writes to disk when `out` is specified) |
+| `WS /ws` | Broadcasts `{ type: 'fs', event: 'add'\|'change'\|'unlink', specId, path }` |
 
-- エラーは `{ error: string }` + 適切なステータスコード
-- **パストラバーサル対策必須**: 解決後の絶対パスが specsDir 配下であることを検証
-- 書き込みは UTF-8 (BOM なし)、改行は入力を尊重
+- Errors return `{ error: string }` with an appropriate status code.
+- **Path traversal protection is required**: verify that the resolved absolute path is within specsDir.
+- Writes use UTF-8 (no BOM); line endings respect the input.
 
-### SpecMeta (共有型、詳細は types.ts)
+### SpecMeta (shared type — see types.ts for details)
 
 ```ts
 interface SpecMeta {
-  id: string;        // "tables:users" / "tables:_" (カテゴリーは "/" を含み得る: "api/v1:users")
+  id: string;        // "tables:users" / "tables:_" (category may contain "/": "api/v1:users")
   category: string;  // "tables", "api/v1"
   slug: string;      // "users", "_"
-  path: string;      // "tables/users.mdx" (specsDir 相対, "/" 区切り)
+  path: string;      // "tables/users.mdx" (relative to specsDir, "/" separator)
   title: string;     // frontmatter.title ?? slug
   description?: string;
-  data: Record<string, unknown>; // front-matter 全体
-  links: string[];   // 本文中の wiki リンク先 ID
+  data: Record<string, unknown>; // full front-matter object
+  links: string[];   // spec IDs referenced by wiki links in the body
   isIndex: boolean;  // slug === "_"
 }
 ```
 
-## MDX 実行環境 (クライアント)
+## MDX Runtime (client)
 
-- `GET /api/specs/...` の content を `@mdx-js/mdx` の `evaluate` でその場コンパイル
-- remark プラグイン: remark-gfm → remark-frontmatter → remark-mdx-frontmatter (`name: "data"`) → wiki リンクプラグイン → **scope 注入プラグイン** (`export const specs = <JSON>`, `export const category = "..."`, `export const slug = "..."` を mdxjs-esm ノードとして注入)
-- これにより MDX 本文で `data` (自身の front-matter)、`specs` (全 SpecMeta 配列)、`category`、`slug` が裸の識別子として使える
-- コンパイルエラー時はアプリを落とさず、エラーメッセージパネルを表示 (ErrorBoundary + try/catch)
+- The `content` from `GET /api/specs/...` is compiled on the fly using `@mdx-js/mdx`'s `evaluate`.
+- Remark plugins: remark-gfm → remark-frontmatter → remark-mdx-frontmatter (`name: "data"`) → wiki link plugin → **scope injection plugin** (injects `export const specs = <JSON>`, `export const category = "..."`, `export const slug = "..."` as mdxjs-esm nodes).
+- This allows `data` (the spec's own front-matter), `specs` (all SpecMeta array), `category`, and `slug` to be used as bare identifiers in the MDX body.
+- On compilation error, the app does not crash; instead it displays an error message panel (ErrorBoundary + try/catch).
 
-### 組み込みコンポーネント (MDX 内で import 不要)
+### Built-in Components (no import needed inside MDX)
 
-- `<TableDefinition data={...} />` — DB テーブル定義の描画。`{ name, description?, columns: [{ name, type, nullable?, default?, primaryKey?, description? }] }`
-- `<SpecList category="tables" />` — カテゴリー内スペックの一覧 (title / description / リンク)。category 省略時は自カテゴリー
-- `<DataView data={...} />` — オブジェクトの整形表示 (折りたたみ可能な JSON ビュー)
-- `<SpecLink to="tables:users">...</SpecLink>` — wiki リンクのコンポーネント版
-- 通常の Markdown 要素 (table, code, blockquote...) もスタイル適用
+- `<TableDefinition data={...} />` — renders a DB table definition. `{ name, description?, columns: [{ name, type, nullable?, default?, primaryKey?, description? }] }`
+- `<SpecList category="tables" />` — lists specs in a category (title / description / link). Defaults to the current category when `category` is omitted.
+- `<DataView data={...} />` — formatted display of an object (collapsible JSON view).
+- `<SpecLink to="tables:users">...</SpecLink>` — component version of a wiki link.
+- Standard Markdown elements (table, code, blockquote, ...) also have styles applied.
 
-## クライアント UI
+## Client UI
 
-ルーティング (BrowserRouter、サーバーは非 API パスを index.html へフォールバック):
+Routing (BrowserRouter; the server falls back non-API paths to index.html):
 
-- `/` — ホーム。specs ルートの `_.mdx` があれば描画、なければカテゴリー一覧
-- `/specs/<categoryPath>` — カテゴリーインデックス (`_.mdx` がなければ自動生成の一覧)
-- `/specs/<categoryPath>/<slug>` — スペック表示
-- `/graph` — リンクグラフ (d3-force。カテゴリー別に色分け、ドラッグ可、クリックでそのスペックへ遷移、欠損ノードは破線)
+- `/` — Home. Renders `_.mdx` at the specs root if it exists; otherwise shows a category list.
+- `/specs/<categoryPath>` — Category index (`_.mdx` if present; otherwise an auto-generated listing).
+- `/specs/<categoryPath>/<slug>` — Spec view.
+- `/graph` — Link graph (d3-force; color-coded by category, draggable, click to navigate to a spec, missing nodes rendered with dashed borders).
 
-レイアウト: Storybook 風。左サイドバーにカテゴリーツリー (フォルダー/ファイル追加ボタン付き)、上部にタイトルバー (表示/編集トグル、グラフへのリンク)、中央コンテンツ。
-編集モード: 左 CodeMirror / 右ライブプレビュー (300ms デバウンス) のスプリットビュー。Ctrl+S と保存ボタンで PUT。
-WebSocket で fs イベント受信 → ツリー再取得。表示中ファイルが外部変更されたら、未編集なら自動リロード、編集中なら警告バナー表示。
-UI は日本語。クリーンでモダンな配色 (ライトテーマ、アクセントカラー 1 色)、プレーン CSS。
+Layout: Storybook-style. Left sidebar with a category tree (buttons to add folders/files), top title bar (view/edit toggle, link to graph), and a center content area.
+Edit mode: Split view with CodeMirror on the left and live preview on the right (300ms debounce). Saves via Ctrl+S and a save button (PUT).
+Receives `fs` events over WebSocket → re-fetches the tree. If the currently displayed file is changed externally: auto-reloads when there are no unsaved edits; shows a warning banner when edits are in progress.
+UI is in English. Clean, modern color scheme (light theme, single accent color), plain CSS.
 
 ## CLI
 
 ```
 specifian [serve] [--dir <specsDir>=./specs] [--port <port>=4400] [--open]
-specifian init [--dir ./specs]          # examples/specs 同梱物をコピーして雛形作成
+specifian init [--dir ./specs]          # copies bundled examples/specs to create a scaffold
 specifian generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 ```
 
-`serve` は dist/client を静的配信。`generate` は `specs/_generators/<generator>.md` (scaffdog ドキュメント形式: front-matter + ファイル名付きコードフェンス) を `@scaffdog/engine` でレンダリング。テンプレート変数: `spec` (対象 SpecMeta、`spec.data` が front-matter)、`specs` (全件)。`--spec` 省略時は全スペックに対して生成。
+`serve` statically serves `dist/client`. `generate` renders `specs/_generators/<generator>.md` (scaffdog document format: front-matter + code fences with file names) using `@scaffdog/engine`. Template variables: `spec` (the target SpecMeta, where `spec.data` is the front-matter) and `specs` (all specs). When `--spec` is omitted, generation runs against all specs.
 
-## 開発スクリプト
+## Dev Scripts
 
-- `npm run dev` — server (tsx watch, port 4399, examples/specs) + vite dev (port 5180, /api と /ws を 4399 へ proxy) を concurrently 起動
-- `npm run build` — tsup + vite build
-- `npm start` — ビルド済みを examples/specs で起動
+- `npm run dev` — starts the server (tsx watch, port 4399, examples/specs) and Vite dev server (port 5180, proxying `/api` and `/ws` to 4399) concurrently.
+- `npm run build` — tsup + vite build.
+- `npm start` — starts the built output against examples/specs.
 
-## v2 機能設計
+## v2 Feature Design
 
-### ユーザー定義コンポーネント (`specs/_components/`)
+### User-Defined Components (`specs/_components/`)
 
-- `specs/_components/*.tsx` / `*.jsx` に React コンポーネントを置くと、全 MDX で import 不要で使える
-- `GET /api/components` → `UserComponentFile[]` (パス + ソース)。`_components` はスペック走査から除外
-- クライアントは **sucrase** (dynamic import でバンドル分離) で TSX → CJS 変換
-  (transforms: `typescript`, `jsx` (classic / React.createElement), `imports`)、
-  `new Function('require', 'module', 'exports', ...)` で実行。require シムは `react` のみ解決し、それ以外の import は明確なエラーメッセージを投げる
-- コンポーネント名: 名前付き export はその名前、default export はファイル名の PascalCase。組み込みと衝突した場合は**ユーザー定義が優先**
-- watcher は `_components` 配下の変更も `FsEvent` (specId: null) で通知 → クライアントはコンパイルキャッシュを破棄して再描画
-- コンパイル/実行エラーはアプリを落とさずエラーパネル表示
+- React components placed at `specs/_components/*.tsx` / `*.jsx` are available in all MDX files without an import.
+- `GET /api/components` → `UserComponentFile[]` (path + source). `_components` is excluded from spec traversal.
+- The client transpiles TSX → CJS using **sucrase** (bundle-split via dynamic import)
+  (transforms: `typescript`, `jsx` (classic / React.createElement), `imports`),
+  then executes with `new Function('require', 'module', 'exports', ...)`. The `require` shim resolves only `react`; any other import throws a clear error message.
+- Component names: named exports use their export name; default exports use the PascalCase of the filename. When a name conflicts with a built-in, **the user-defined component takes precedence**.
+- The watcher also notifies changes under `_components` via `FsEvent` (specId: null) → the client discards the compilation cache and re-renders.
+- Compilation/runtime errors show an error panel without crashing the app.
 
-### 全文検索
+### Full-Text Search
 
 - `GET /api/search?q=<query>&limit=<n=20>` → `SearchResult[]`
-- 対象フィールドとスコア順: title > description > front-matter (JSON 文字列化) > 本文。大文字小文字を無視した部分一致 (日本語は素直な substring)
-- UI: **Ctrl+K / Cmd+K** でコマンドパレット風モーダル。150ms デバウンスのインクリメンタル検索、↑↓ で選択、Enter で遷移。サイドバー上部に検索ボタンも置く
+- Fields and score order: title > description > front-matter (JSON-stringified) > body. Case-insensitive substring match (straightforward substring for languages like Japanese).
+- UI: **Ctrl+K / Cmd+K** opens a command-palette-style modal. Incremental search with 150ms debounce, ↑↓ to select, Enter to navigate. Also places a search button at the top of the sidebar.
 
 ### Mermaid
 
-- ` ```mermaid ` コードフェンスを `MermaidDiagram` コンポーネントが SVG 描画
-- mermaid 本体は dynamic import (メインバンドルから分離)。描画エラーはエラーボックス表示
-- components map の `code` レンダラーで `language-mermaid` を検出してフック
+- ` ```mermaid ` code fences are rendered as SVG by a `MermaidDiagram` component.
+- The mermaid library is dynamically imported (split from the main bundle). Render errors show an error box.
+- Hooked via the `code` renderer in the components map by detecting `language-mermaid`.
 
-### front-matter スキーマバリデーション
+### front-matter Schema Validation
 
-- `<category>/_schema.json` (JSON Schema) を置くと、そのカテゴリーの通常スペック (インデックス `_`・`_template` を除く) の front-matter を **ajv** (allErrors) で検証
+- Placing a `<category>/_schema.json` (JSON Schema) validates the front-matter of regular specs in that category (excluding the index `_` and `_template`) using **ajv** (allErrors).
 - `GET /api/validation` → `ValidationReport`
-- CLI: `specifian validate [--dir]` — 違反があれば一覧表示して exit code 1 (CI 組み込み用)
-- UI: サイドバーのスペック行に警告バッジ、スペックページ上部に違反一覧バナー
+- CLI: `specifian validate [--dir]` — lists violations and exits with code 1 if any are found (for CI integration).
+- UI: warning badge on spec rows in the sidebar; violation list banner at the top of the spec page.
 
-## v3 機能設計: front-matter の GUI フォーム編集
+## v3 Feature Design: GUI Form Editing for front-matter
 
-### コンセプト
+### Concept
 
-編集モードの左ペインに **[テキスト] / [フォーム]** タブを追加する。
-フォームはカテゴリーの `_schema.json` (JSON Schema) から自動生成し、スキーマが無い場合は現在の front-matter データから擬似スキーマを推論する。
-フォームが書き換えるのは front-matter の YAML 部分のみ。本文は [テキスト] タブで編集する。
-**単一のソース・オブ・トゥルースは編集中のテキスト**: フォーム変更 → YAML 再シリアライズ → テキストへ反映 (dirty / Ctrl+S 保存 / ライブプレビューは既存フローのまま動く)。
+Add a **[Text] / [Form]** tab to the left pane of edit mode.
+The form is auto-generated from the category's `_schema.json` (JSON Schema); when no schema exists, a pseudo-schema is inferred from the current front-matter data.
+The form only rewrites the YAML front-matter section. The body is edited in the [Text] tab.
+**The single source of truth is the text being edited**: form change → YAML re-serialized → reflected back into the text (dirty state / Ctrl+S save / live preview all continue to work through the existing flow).
 
-### サーバー
+### Server
 
-- `GET /api/schema/<categoryPath>` → `{ schema: <JSON> | null }` (`_schema.json` が無ければ null。404 にしない)
-- validate.ts のスキーマ探索ロジックを共有ヘルパー化して再利用
+- `GET /api/schema/<categoryPath>` → `{ schema: <JSON> | null }` (null when no `_schema.json` exists; does not return 404).
+- Refactor the schema lookup logic in validate.ts into a shared helper for reuse.
 
-### クライアント (src/client/form/)
+### Client (`src/client/form/`)
 
-- `schemaTypes.ts` — 扱う JSON Schema サブセットの構造型 (固定契約)
-- `yamlSync.ts` — `splitFrontMatter(content)` / `replaceFrontMatter(content, data)`。
-  `yaml` パッケージで parse/stringify。キー順は挿入順で安定。YAML コメント・独自整形はフォーム編集時に正規化される (既知の制限として README に記載)
-- `infer.ts` — `inferSchema(data)`: スキーマが無い場合に値から型推論 (string/number/boolean/object/array)
-- `SchemaForm.tsx` + フィールド群 — スキーマ駆動の再帰フォームレンダラー:
-  - string → テキスト入力 (enum があれば select)
-  - number / integer → 数値入力、boolean → チェックボックス
-  - object → ネストした fieldset (再帰)
-  - **array of object → 行の追加・削除・並べ替えができるテーブル UI** (テーブルのカラム定義編集が主役ユースケース)
-  - array of scalar → 追加・削除できる行リスト
-  - schema の `title` / `description` をラベル・ヘルプ文に、`required` は * マーク表示
-  - スキーマに無い既存キーは「スキーマ外のフィールド」として汎用編集 (推論フォーム) で保持し、消さない
-- バリデーション: クライアントは required / 型の軽量チェックのみ (本検証はサーバーの ajv = 既存 ValidationProvider)
+- `schemaTypes.ts` — structural types for the supported JSON Schema subset (fixed contract).
+- `yamlSync.ts` — `splitFrontMatter(content)` / `replaceFrontMatter(content, data)`.
+  Uses the `yaml` package for parse/stringify. Key order is stable (insertion order). YAML comments and custom formatting are normalized on form edit (documented as a known limitation in the README).
+- `infer.ts` — `inferSchema(data)`: infers types from values when no schema is available (string/number/boolean/object/array).
+- `SchemaForm.tsx` + field components — a schema-driven recursive form renderer:
+  - string → text input (select if enum is present)
+  - number / integer → numeric input; boolean → checkbox
+  - object → nested fieldset (recursive)
+  - **array of object → table UI with add / delete / reorder per row** (primary use case: editing table column definitions)
+  - array of scalar → row list with add / delete
+  - Schema `title` / `description` used for labels and help text; `required` fields marked with *.
+  - Existing keys not in the schema are preserved and edited as "out-of-schema fields" via the inference form — they are never deleted.
+- Validation: the client performs only lightweight required / type checks (full validation is handled server-side by the existing ajv ValidationProvider).
 
-### SpecPage 統合
+### SpecPage Integration
 
-- 編集モードの左ペイン上部にタブ [テキスト] [フォーム]
-- フォームタブへの切り替え時に現在テキストを parse。YAML が壊れている場合はエラーメッセージを出してテキストタブに留まる
-- フォーム変更のたびに `replaceFrontMatter` でテキストを更新 → 既存のデバウンスプレビューが追従
+- Tabs [Text] [Form] at the top of the left pane in edit mode.
+- Switching to the Form tab parses the current text. If the YAML is broken, an error message is shown and the Text tab is kept active.
+- On every form change, `replaceFrontMatter` updates the text → the existing debounce preview follows.
 
-## v4 機能設計: Excalidraw による画面設計の埋め込み
+## v4 Feature Design: Embedding Screen Designs with Excalidraw
 
-### コンセプト
+### Concept
 
-画面設計 (ワイヤーフレーム) を **Excalidraw** (`@excalidraw/excalidraw`, MIT, 完全ローカル動作) で作図し、
-スペックと同じ `specs/` 配下のサイドカーファイルとして Git 管理する。
+Create screen designs (wireframes) with **Excalidraw** (`@excalidraw/excalidraw`, MIT, fully local)
+and manage them under the same `specs/` directory as sidecar files in Git.
 
-### ストレージ
+### Storage
 
-- `specs/<path>.excalidraw` — Excalidraw シーン JSON (serializeAsJSON 形式)。スペック走査の対象外 (.mdx のみ走査のため自然に除外)
-- watcher は `.excalidraw` の変更も `FsEvent` (specId: null) でブロードキャストする
+- `specs/<path>.excalidraw` — Excalidraw scene JSON (serializeAsJSON format). Excluded from spec traversal (only `.mdx` files are scanned, so these are naturally excluded).
+- The watcher also broadcasts changes to `.excalidraw` files as `FsEvent` (specId: null).
 
 ### API
 
-- `GET /api/drawings` → `DrawingMeta[]` (specs 配下の全 .excalidraw、パスは specsDir 相対 `/` 区切り)
-- `GET /api/drawings/<path>` → シーン JSON そのまま (404 if missing)。`<path>` は拡張子なし (`screens/login`)
-- `PUT /api/drawings/<path>` → body = シーン JSON を保存 (新規作成も可、親フォルダーは存在必須)。パストラバーサルガード必須
-- エラーは `{ error }` 形式
+- `GET /api/drawings` → `DrawingMeta[]` (all `.excalidraw` files under specs, paths relative to specsDir using `/` separator)
+- `GET /api/drawings/<path>` → the scene JSON as-is (404 if missing). `<path>` has no extension (`screens/login`)
+- `PUT /api/drawings/<path>` → saves the body (scene JSON) to disk (new files can also be created; the parent folder must exist). Path traversal guard is required.
+- Errors use `{ error }` format.
 
-### クライアント
+### Client
 
-- MDX 組み込みコンポーネント `<Drawing src="screens/login" />` (src は specsDir 相対・拡張子なし):
-  - シーンを取得し Excalidraw の `exportToSvg` で **静的 SVG 描画** (閲覧時はエディターを起動しない)
-  - ホバーで「編集」ボタン → **フルスクリーン寄りのモーダル**で Excalidraw エディターを開く (langCode: "ja")
-  - 保存 → PUT → ws イベント → SVG 再描画。キャンセルで破棄
-  - ファイルが無い場合はプレースホルダー + 「図を作成」ボタン (空シーンを PUT してからエディターを開く)
-  - 外部 (VSCode 等) での変更も fs イベントで自動再描画
-- `@excalidraw/excalidraw` は **dynamic import** でメインバンドルから分離 (mermaid と同じパターン)
-- Excalidraw が要求する場合は vite.config の `define` (process.env など) を追加してよい
+- Built-in MDX component `<Drawing src="screens/login" />` (src is specsDir-relative, no extension):
+  - Fetches the scene and renders a **static SVG** via Excalidraw's `exportToSvg` (no editor is launched during view mode).
+  - On hover, an "Edit" button appears → opens the Excalidraw editor in a **near-fullscreen modal** (langCode: "en").
+  - Save → PUT → ws event → SVG re-renders. Cancel discards changes.
+  - When no file exists, shows a placeholder + "Create drawing" button (PUTs an empty scene, then opens the editor).
+  - External changes (e.g. from VSCode) trigger auto re-render via fs events.
+- `@excalidraw/excalidraw` is **dynamically imported** and split from the main bundle (same pattern as mermaid).
+- If Excalidraw requires it, add `define` entries (e.g. `process.env`) to vite.config as needed.
 
-### サンプル
+### Example
 
-- `examples/specs/screens/` カテゴリー: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter に画面項目定義 + `<Drawing src="screens/login" />`) / `login.excalidraw` (ログイン画面の簡単なワイヤーフレーム)
+- `examples/specs/screens/` category: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter with screen field definitions + `<Drawing src="screens/login" />`) / `login.excalidraw` (a simple wireframe of the login screen).
 
-## v5 機能設計: MCP サーバー / lint API / リネーム・削除
+## v5 Feature Design: MCP Server / Lint API / Rename & Delete
 
-### コンセプト
+### Concept
 
-AI エージェントが specifian を安全に読み書きできるようにする (MCP + lint)。
-あわせて、人間・エージェント双方に必要な「ドキュメントの育て直し」操作 (リネーム・削除) を提供する。
+Enable AI agents to safely read and write specifian content (MCP + lint).
+Also provide "document restructuring" operations (rename, delete) needed by both humans and agents.
 
-### サーバー共有モジュール (routes と MCP の双方から使う)
+### Shared Server Modules (used by both routes and MCP)
 
-- `src/server/searchCore.ts` — `searchSpecs(specsDir, q, limit): Promise<SearchResult[]>` (routes/search.ts のロジックを抽出、route は薄く)
+- `src/server/searchCore.ts` — `searchSpecs(specsDir, q, limit): Promise<SearchResult[]>` (extracts logic from routes/search.ts; the route becomes a thin wrapper).
 - `src/server/lintCore.ts` — `lintContent(specsDir, req: LintRequest): Promise<LintIssue[]>`:
-  1. YAML: gray-matter のパース失敗 → error (rule: yaml)
-  2. MDX 構文: `@mdx-js/mdx` の `compile` (remark-gfm + remark-frontmatter) 失敗 → error (rule: mdx, line/column 付き)
-  3. wiki リンク: 本文から抽出した `[[id]]` が既存スペックに解決できない → warning (rule: wikilink)
-  4. スキーマ: category 指定時、`_schema.json` があれば front-matter を ajv 検証 → error (rule: schema)
+  1. YAML: gray-matter parse failure → error (rule: yaml)
+  2. MDX syntax: `@mdx-js/mdx` `compile` (remark-gfm + remark-frontmatter) failure → error (rule: mdx, with line/column)
+  3. Wiki links: `[[id]]` extracted from the body that cannot be resolved to an existing spec → warning (rule: wikilink)
+  4. Schema: when a category is specified, validates front-matter against `_schema.json` using ajv → error (rule: schema)
 - `src/server/specOps.ts` — `findRefs(specsDir, id)` / `renameSpec(specsDir, from, to)` / `deleteSpec(specsDir, id)`:
-  - rename: ファイル名変更 (to のカテゴリーは存在必須) + 全スペックの `[[from]]` `[[from|ラベル]]` を一括書き換え。
-    **コードフェンス・インラインコード内は書き換えない** (フェンス領域を位置ベースで除外)
-  - 既存チェック: from 存在 (404) / to 非存在 (409) / カテゴリー不在 (400)
+  - rename: renames the file (the target category must exist) + rewrites all `[[from]]` / `[[from|label]]` occurrences across all specs in bulk.
+    **Does not rewrite occurrences inside code fences or inline code** (fence regions are excluded by position).
+  - Pre-checks: from must exist (404) / to must not exist (409) / category must exist (400).
 
-### API 追加・変更
+### API Additions and Changes
 
-| メソッド/パス | 説明 |
+| Method / Path | Description |
 |---|---|
-| `POST /api/lint` | body `LintRequest { content, category?, slug? }` → `{ issues: LintIssue[] }` (保存しない) |
-| `PUT /api/specs/...` | 応答を `SaveSpecResponse { meta, issues }` に拡張 (保存は常に実行、issues は情報) |
-| `POST /api/rename` | body `{ from, to }` (スペック ID) → `{ meta, rewrittenFiles }` |
-| `DELETE /api/specs/<categoryPath>/<slug>` | スペック削除。`_.mdx` (`slug: _`) も削除可 |
-| `GET /api/refs?id=<specId>` | `{ refs: string[] }` — id を参照しているスペック ID 一覧 |
+| `POST /api/lint` | body `LintRequest { content, category?, slug? }` → `{ issues: LintIssue[] }` (does not save) |
+| `PUT /api/specs/...` | Response extended to `SaveSpecResponse { meta, issues }` (save always proceeds; issues are informational) |
+| `POST /api/rename` | body `{ from, to }` (spec IDs) → `{ meta, rewrittenFiles }` |
+| `DELETE /api/specs/<categoryPath>/<slug>` | Delete a spec. `_.mdx` (`slug: _`) can also be deleted. |
+| `GET /api/refs?id=<specId>` | `{ refs: string[] }` — list of spec IDs that reference the given ID |
 
-### MCP サーバー (`specifian mcp [--dir ./specs]`)
+### MCP Server (`specifian mcp [--dir ./specs]`)
 
-- `@modelcontextprotocol/sdk` の stdio トランスポート。**stdout には書かない** (プロトコル破壊) — ログは stderr
-- ツール (入力は zod スキーマ、結果は JSON 文字列の content):
-  `list_specs` / `read_spec {id}` / `write_spec {id, content}` (既存のみ、issues を返す) / `create_spec {category, slug, title?}` /
+- Uses `@modelcontextprotocol/sdk` stdio transport. **Do not write to stdout** (breaks the protocol) — log to stderr.
+- Tools (input validated with zod schema; result as JSON string content):
+  `list_specs` / `read_spec {id}` / `write_spec {id, content}` (existing specs only; returns issues) / `create_spec {category, slug, title?}` /
   `rename_spec {from, to}` / `delete_spec {id}` / `search {query, limit?}` / `get_data {category?}` /
   `validate` / `lint {content, category?}` / `list_generators` / `generate {generator, specId?, out?}`
-- 各ツールの description は日本語で、エージェントが迷わない具体性で書く (ID 形式 "category:slug" の説明等)
+- Each tool's description should be written with enough concrete detail that agents are not left guessing (e.g., explaining the ID format "category:slug").
 
-### クライアント UI
+### Client UI
 
-- サイドバーのスペック行に hover「⋯」メニュー → リネーム / 削除
-  - リネーム: カテゴリー (datalist) + slug 入力 → POST /api/rename → toast「リンク N 件を書き換えました」。表示中のスペックなら新ルートへ遷移
-  - 削除: GET /api/refs で参照元を表示 (「N 件から参照されています」+ 一覧) → 確認 → DELETE。表示中ならホームへ
-- 保存時: SaveSpecResponse.issues が非空なら、ページ上部に amber バナーで一覧表示 (既存のスキーマ違反バナーと同系)
+- A hover "..." menu on spec rows in the sidebar → Rename / Delete.
+  - Rename: enter a category (datalist) + slug → POST /api/rename → toast "Rewrote N link(s)". Navigates to the new route if the renamed spec is currently displayed.
+  - Delete: GET /api/refs to show referencing specs ("Referenced by N spec(s)" + list) → confirm → DELETE. Navigates home if the deleted spec is currently displayed.
+- On save: if `SaveSpecResponse.issues` is non-empty, display a list in an amber banner at the top of the page (consistent with the existing schema violation banner).
 
-## 将来拡張 (v6 候補)
+## Future Extensions (v6 candidates)
 
-- バックリンクパネル、静的サイトエクスポート (`specifian build`)
-- エディター補完 ([[ 補完・front-matter キー補完)、画像ペースト保存
-- 全文検索のインデックス化、Mermaid テーマ設定、フォームのカスタムウィジェット
-- Drawing のグラフページ統合、AGENTS.md 生成 (`specifian init`)
+- Backlink panel, static site export (`specifian build`)
+- Editor autocomplete (`[[` completion, front-matter key completion), image paste and save
+- Full-text search indexing, Mermaid theme configuration, custom form widgets
+- Drawing integration in the graph page, AGENTS.md generation (`specifian init`)
