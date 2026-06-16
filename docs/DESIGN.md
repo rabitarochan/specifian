@@ -1,13 +1,13 @@
 # specifian Design Document
 
-A web tool that displays and edits `.mdx` files under a local `specs/` directory as documentation, similar to Storybook.
+A web tool that displays and edits `.mdx` files under a local `.specs/` directory as documentation, similar to Storybook.
 It treats front-matter as "structured design data" that can be referenced from React components and leveraged for API responses and code generation.
 
 ## Concept
 
 - **Markdown (MDX) is the source of truth.** Managed with Git, editable in both VSCode and the Web UI.
 - **front-matter = design data.** Accessible as `data` from the MDX body, retrievable in bulk via the API, and usable for code generation with scaffdog templates.
-- **Applicable to any project.** The folder structure under `specs/` is completely free-form.
+- **Applicable to any project.** The folder structure under `.specs/` is completely free-form.
 
 ## Tech Stack
 
@@ -54,19 +54,19 @@ specifian/
   README.md
 ```
 
-## specs/ Rules (user's project side)
+## .specs/ Rules (user's project side)
 
-- Any folder at any depth under `specs/` = a **category** (e.g. `tables`, `api/v1`)
+- Any folder at any depth under `.specs/` = a **category** (e.g. `tables`, `api/v1`)
 - `<category>/<slug>.mdx` = a **spec**. The ID is `<category>:<slug>` (e.g. `tables:users`)
 - `<category>/_.mdx` = the category's **index page** (equivalent to index.html). slug is `_`
 - `<category>/_template.mdx` = the **template** used when creating a new spec. Excluded from listings and the graph.
-- `specs/_generators/*.md` = scaffdog-format **code generation templates** (not treated as specs)
+- `.specs/_generators/*.md` = scaffdog-format **code generation templates** (not treated as specs)
 - front-matter (YAML) follows a free schema. `title` and `description` are reserved keys interpreted by the UI.
 
 ## Wiki Links
 
 - Syntax: `[[tables:users]]` or `[[tables:users|display name]]`
-- `[[tables:users]]` → links to `specs/tables/users.mdx` (client route `/specs/tables/users`)
+- `[[tables:users]]` → links to `.specs/tables/users.mdx` (client route `/specs/tables/users`)
 - `[[tables:_]]` can also link to a category index
 - Extraction (server-side, for graph): regex `/\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g`.
   Excludes matches inside code fences and inline code.
@@ -143,12 +143,12 @@ UI is in English. Clean, modern color scheme (light theme, single accent color),
 ## CLI
 
 ```
-specifian [serve] [--dir <specsDir>=./specs] [--port <port>=4400] [--open]
-specifian init [--dir ./specs]          # copies bundled examples/specs to create a scaffold
-specifian generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
+specifian [serve] [--dir <specsDir>=./.specs] [--port <port>=4400] [--open]
+specifian init [--dir ./.specs]          # copies bundled examples/specs to create a scaffold
+specifian generate <generator> [--dir ./.specs] [--spec <id>] [--out <dir>=.]
 ```
 
-`serve` statically serves `dist/client`. `generate` renders `specs/_generators/<generator>.md` (scaffdog document format: front-matter + code fences with file names) using `@scaffdog/engine`. Template variables: `spec` (the target SpecMeta, where `spec.data` is the front-matter) and `specs` (all specs). When `--spec` is omitted, generation runs against all specs.
+`serve` statically serves `dist/client`. `generate` renders `.specs/_generators/<generator>.md` (scaffdog document format: front-matter + code fences with file names) using `@scaffdog/engine`. Template variables: `spec` (the target SpecMeta, where `spec.data` is the front-matter) and `specs` (all specs). When `--spec` is omitted, generation runs against all specs.
 
 ## Dev Scripts
 
@@ -158,9 +158,9 @@ specifian generate <generator> [--dir ./specs] [--spec <id>] [--out <dir>=.]
 
 ## v2 Feature Design
 
-### User-Defined Components (`specs/_components/`)
+### User-Defined Components (`.specs/_components/`)
 
-- React components placed at `specs/_components/*.tsx` / `*.jsx` are available in all MDX files without an import.
+- React components placed at `.specs/_components/*.tsx` / `*.jsx` are available in all MDX files without an import.
 - `GET /api/components` → `UserComponentFile[]` (path + source). `_components` is excluded from spec traversal.
 - The client transpiles TSX → CJS using **sucrase** (bundle-split via dynamic import)
   (transforms: `typescript`, `jsx` (classic / React.createElement), `imports`),
@@ -229,11 +229,11 @@ The form only rewrites the YAML front-matter section. The body is edited in the 
 ### Concept
 
 Create screen designs (wireframes) with **Excalidraw** (`@excalidraw/excalidraw`, MIT, fully local)
-and manage them under the same `specs/` directory as sidecar files in Git.
+and manage them under the same `.specs/` directory as sidecar files in Git.
 
 ### Storage
 
-- `specs/<path>.excalidraw` — Excalidraw scene JSON (serializeAsJSON format). Excluded from spec traversal (only `.mdx` files are scanned, so these are naturally excluded).
+- `.specs/<path>.excalidraw` — Excalidraw scene JSON (serializeAsJSON format). Excluded from spec traversal (only `.mdx` files are scanned, so these are naturally excluded).
 - The watcher also broadcasts changes to `.excalidraw` files as `FsEvent` (specId: null).
 
 ### API
@@ -288,7 +288,7 @@ Also provide "document restructuring" operations (rename, delete) needed by both
 | `DELETE /api/specs/<categoryPath>/<slug>` | Delete a spec. `_.mdx` (`slug: _`) can also be deleted. |
 | `GET /api/refs?id=<specId>` | `{ refs: string[] }` — list of spec IDs that reference the given ID |
 
-### MCP Server (`specifian mcp [--dir ./specs]`)
+### MCP Server (`specifian mcp [--dir ./.specs]`)
 
 - Uses `@modelcontextprotocol/sdk` stdio transport. **Do not write to stdout** (breaks the protocol) — log to stderr.
 - Tools (input validated with zod schema; result as JSON string content):

@@ -1,5 +1,5 @@
 /**
- * Shared provider that loads user-defined components (specs/_components/) once on app start
+ * Shared provider that loads user-defined components (.specs/_components/) once on app start
  * and supplies them to all MDX renders.
  * When an FsEvent with a path starting with "_components/" arrives via WebSocket,
  * the compile cache is invalidated and components are reloaded → re-renders pick up the changes.

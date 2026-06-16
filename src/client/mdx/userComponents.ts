@@ -1,5 +1,5 @@
 /**
- * Runtime compiler for user-defined components (specs/_components/*.tsx|jsx).
+ * Runtime compiler for user-defined components (.specs/_components/*.tsx|jsx).
  *
  * - Fetches UserComponentFile[] from GET /api/components
  * - Transforms each file from TSX/JSX → CJS using sucrase

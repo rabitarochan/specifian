@@ -19,7 +19,7 @@ program
 program
   .command('serve', { isDefault: true })
   .description('Start the spec server')
-  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--dir <specsDir>', 'Specs directory', './.specs')
   .option('--port <port>', 'Port number', '4400')
   .option('--open', 'Open browser automatically', false)
   .action(async (opts: { dir: string; port: string; open: boolean }) => {
@@ -56,7 +56,7 @@ program
 program
   .command('init')
   .description('Initialize with example specs')
-  .option('--dir <specsDir>', 'Target directory', './specs')
+  .option('--dir <specsDir>', 'Target directory', './.specs')
   .action(async (opts: { dir: string }) => {
     const targetDir = path.resolve(opts.dir);
     console.log(`📂 Target directory: ${targetDir}`);
@@ -75,7 +75,7 @@ program
 program
   .command('generate <generator>')
   .description('Run a code generation template')
-  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--dir <specsDir>', 'Specs directory', './.specs')
   .option('--spec <specId>', 'Target spec ID (defaults to all specs)')
   .option('--out <outDir>', 'Output directory', '.')
   .action(
@@ -124,7 +124,7 @@ program
 program
   .command('validate')
   .description('Validate front-matter against schemas')
-  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--dir <specsDir>', 'Specs directory', './.specs')
   .action(async (opts: { dir: string }) => {
     const specsDir = path.resolve(opts.dir);
 
@@ -161,7 +161,7 @@ program
 program
   .command('mcp')
   .description('Start the MCP server (stdio) — lets AI agents read and write specs')
-  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--dir <specsDir>', 'Specs directory', './.specs')
   .action(async (opts: { dir: string }) => {
     const specsDir = path.resolve(opts.dir);
 
