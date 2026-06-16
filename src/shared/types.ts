@@ -201,6 +201,22 @@ export interface CategorySchemaResponse {
   schema: Record<string, unknown> | null;
 }
 
+/**
+ * Response for GET /api/guide/<category>. The category root (empty path) holds the
+ * project-wide guide. Categories/root without a _guide.md get guide: null.
+ * `guide` is the raw Markdown including front-matter; title/description are parsed from it.
+ */
+export interface GuideResponse {
+  guide: string | null;
+  title?: string;
+  description?: string;
+}
+
+/** Request body for PUT /api/guide/<category> */
+export interface SaveGuideRequest {
+  content: string;
+}
+
 /** Regex for extracting wiki links (excluding code fences/inline code is done by the caller) */
 export const WIKILINK_PATTERN = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
 

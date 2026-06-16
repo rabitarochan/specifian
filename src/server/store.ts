@@ -91,7 +91,12 @@ async function scanDir(
         continue;
       }
       await scanDir(specsDir, fullPath, results);
-    } else if (entry.isFile() && /\.mdx?$/.test(entry.name)) {
+    } else if (
+      entry.isFile() &&
+      /\.mdx?$/.test(entry.name) &&
+      // _guide.md is a side file (authoring guide), not a spec — read separately via guide.ts
+      entry.name !== '_guide.md'
+    ) {
       try {
         const content = await fs.readFile(fullPath, 'utf-8');
         results.push(buildSpecMeta(specsDir, fullPath, content));

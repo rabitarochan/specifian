@@ -25,6 +25,30 @@ description: ''
 Describe the spec here.
 `;
 
+const DEFAULT_GUIDE_CONTENT = (categoryPath: string) =>
+  `---
+title: ${categoryPath} — Authoring Guide
+description: What to record in a ${categoryPath} spec and the conventions to follow
+---
+
+## Purpose
+
+Describe what kind of document this category holds and when to add one.
+
+## What to record
+
+List the information every spec in this category should capture
+(complements \`_schema.json\`, which enforces the front-matter structure).
+
+## Design conventions
+
+Capture naming rules, design decisions, and do/don't guidance for this category.
+
+## Examples
+
+Link to exemplary specs with wiki links, e.g. \`[[${categoryPath}:_]]\`.
+`;
+
 export function categoriesRouter(specsDir: string): Router {
   const router = Router();
 
@@ -63,6 +87,10 @@ export function categoriesRouter(specsDir: string): Router {
       // Create _template.mdx
       const templatePath = path.join(newDir, '_template.mdx');
       await fs.writeFile(templatePath, DEFAULT_TEMPLATE_CONTENT(categoryPath), 'utf-8');
+
+      // Create _guide.md (authoring guide)
+      const guidePath = path.join(newDir, '_guide.md');
+      await fs.writeFile(guidePath, DEFAULT_GUIDE_CONTENT(categoryPath), 'utf-8');
 
       res.status(201).json({ path: categoryPath });
     } catch (err) {
