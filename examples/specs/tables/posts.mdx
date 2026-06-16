@@ -1,60 +1,60 @@
 ---
-title: posts テーブル
-description: ユーザーが投稿したコンテンツを管理するテーブル
+title: posts table
+description: Table managing content posted by users
 table:
   name: posts
-  description: ユーザー投稿情報
+  description: User post information
   columns:
     - name: id
       type: bigint
       primaryKey: true
-      description: 主キー
+      description: Primary key
     - name: user_id
       type: bigint
       nullable: false
-      description: ユーザー ID（users テーブルへの外部キー）
+      description: User ID (foreign key to the users table)
     - name: title
       type: varchar(200)
       nullable: false
-      description: 投稿タイトル
+      description: Post title
     - name: body
       type: text
       nullable: false
-      description: 投稿本文
+      description: Post body
     - name: status
       type: varchar(20)
       nullable: false
       default: "'draft'"
-      description: 投稿ステータス（draft / published / archived）
+      description: "Post status (draft / published / archived)"
     - name: published_at
       type: timestamp
       nullable: true
-      description: 公開日時（公開前は NULL）
+      description: Publication timestamp (NULL before publishing)
     - name: created_at
       type: timestamp
       nullable: false
-      description: 作成日時
+      description: Creation timestamp
     - name: updated_at
       type: timestamp
       nullable: false
-      description: 更新日時
+      description: Last updated timestamp
       primaryKey: false
 ---
 
 # {title}
 
-ユーザーが投稿したコンテンツを管理するテーブル。ブログ記事やニュース投稿などに対応します。
+Table for managing content posted by users. Supports blog articles, news posts, and similar content.
 
 <TableDefinition data={data.table} />
 
-## 設計メモ
+## Design Notes
 
-- user_id は [[tables:users]] テーブルへの外部キーです
-- status のデフォルト値は 'draft' で、自動公開は行われません
-- published_at は公開予定日時の指定にも使えます
-- 論理削除が必要な場合は、status を 'archived' にして対応してください
+- `user_id` is a foreign key referencing the [[tables:users]] table.
+- The default value for `status` is `'draft'`; no automatic publishing is performed.
+- `published_at` can also be used to schedule a future publication date.
+- If soft delete is required, set `status` to `'archived'` instead of physically deleting the row.
 
-## 関連スペック
+## Related Specs
 
-- [[tables:users]] — 投稿者情報（user_id で参照）
-- [[api:posts-api]] — 投稿管理 API
+- [[tables:users]] — Author information (referenced via user_id)
+- [[api:posts-api]] — Post management API

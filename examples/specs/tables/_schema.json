@@ -1,74 +1,74 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "テーブル定義スキーマ",
-  "description": "データベーステーブルの仕様を定義するスキーマ",
+  "title": "Table Definition Schema",
+  "description": "Schema for defining database table specifications",
   "type": "object",
   "required": ["title", "table"],
   "properties": {
     "title": {
       "type": "string",
-      "title": "タイトル",
-      "description": "テーブルのタイトル"
+      "title": "Title",
+      "description": "Title of the table"
     },
     "description": {
       "type": "string",
-      "title": "説明",
-      "description": "テーブルの説明"
+      "title": "Description",
+      "description": "Description of the table"
     },
     "table": {
       "type": "object",
-      "title": "テーブル定義",
-      "description": "テーブル定義",
+      "title": "Table Definition",
+      "description": "Table definition",
       "required": ["name", "columns"],
       "properties": {
         "name": {
           "type": "string",
-          "title": "テーブル名",
-          "description": "テーブル名（データベース側の実際の名前）"
+          "title": "Table Name",
+          "description": "Actual table name in the database"
         },
         "description": {
           "type": "string",
-          "title": "テーブルの説明",
-          "description": "テーブルの詳細説明"
+          "title": "Table Description",
+          "description": "Detailed description of the table"
         },
         "columns": {
           "type": "array",
-          "title": "カラム",
+          "title": "Columns",
           "minItems": 1,
-          "description": "カラムリスト",
+          "description": "List of columns",
           "items": {
             "type": "object",
             "required": ["name", "type"],
             "properties": {
               "name": {
                 "type": "string",
-                "title": "カラム名",
-                "description": "カラム名"
+                "title": "Column Name",
+                "description": "Column name"
               },
               "type": {
                 "type": "string",
-                "title": "型",
-                "description": "データ型（bigint、varchar など）"
+                "title": "Type",
+                "description": "Data type (e.g. bigint, varchar)"
               },
               "nullable": {
                 "type": "boolean",
-                "title": "NULL 許可",
-                "description": "NULL を許可するか"
+                "title": "Nullable",
+                "description": "Whether NULL is allowed"
               },
               "primaryKey": {
                 "type": "boolean",
-                "title": "主キー",
-                "description": "主キーであるか"
+                "title": "Primary Key",
+                "description": "Whether this column is the primary key"
               },
               "default": {
                 "type": "string",
-                "title": "デフォルト値",
-                "description": "デフォルト値"
+                "title": "Default Value",
+                "description": "Default value"
               },
               "description": {
                 "type": "string",
-                "title": "説明",
-                "description": "カラムの説明"
+                "title": "Description",
+                "description": "Description of the column"
               }
             },
             "additionalProperties": true

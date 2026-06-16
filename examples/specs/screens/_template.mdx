@@ -1,29 +1,29 @@
 ---
-title: 新しい画面
-description: 画面の説明
+title: New Screen
+description: Description of the screen
 screen:
   route: "/path"
   fields:
-    - { name: field_name, type: text, required: true, description: 入力項目の説明 }
+    - { name: field_name, type: text, required: true, description: Description of the input field }
   actions:
-    - { name: 実行, description: ボタン動作 }
+    - { name: Submit, description: Button behavior }
 ---
 
 # {title}
 
 <Drawing src="screens/CHANGEME" />
 
-## 画面項目
+## Screen Fields
 
 <DataView data={data.screen.fields} />
 
-## アクション
+## Actions
 
 <DataView data={data.screen.actions} />
 
-## 関連スペック
+## Related Specs
 
-ここに関連するスペック（テーブル定義や API 仕様など）をリンクしてください。
+Link related specs (table definitions, API specifications, etc.) here.
 
-- [[tables:_]] — テーブル一覧
-- [[api:_]] — API 仕様一覧
+- [[tables:_]] — Table index
+- [[api:_]] — API specification index

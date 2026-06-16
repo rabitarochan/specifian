@@ -1,10 +1,10 @@
 /**
- * テーブル定義のカラム数を集計して表示するサンプルコンポーネント。
+ * Sample component that aggregates and displays the column count of a table definition.
  *
- * front-matter (data.table) を props で受け取り、
- *   「全 N カラム / うち NOT NULL M」
- * を計算して表示します。さらに useState のトグルで NULL 許可カラム名の
- * 表示/非表示を切り替えられ、_components 内でも React フックが動くことを示します。
+ * Receives front-matter (data.table) as a prop and computes:
+ *   "Total N columns / NOT NULL M"
+ * It also uses a useState toggle to show/hide the names of nullable columns,
+ * demonstrating that React hooks work inside _components.
  */
 import * as React from 'react';
 
@@ -22,7 +22,7 @@ export default function ColumnCount({ table }: { table: TableLike }) {
 
   const columns = Array.isArray(table?.columns) ? table.columns : [];
   const total = columns.length;
-  // nullable が false / 未指定なら NOT NULL とみなす
+  // Treat a column as NOT NULL if nullable is false or unspecified
   const notNull = columns.filter((c) => c?.nullable !== true).length;
   const nullableNames = columns
     .filter((c) => c?.nullable === true)
@@ -43,7 +43,7 @@ export default function ColumnCount({ table }: { table: TableLike }) {
       }}
     >
       <div>
-        全 <strong>{total}</strong> カラム / うち NOT NULL{' '}
+        Total <strong>{total}</strong> columns / NOT NULL{' '}
         <strong>{notNull}</strong>
       </div>
       {nullableNames.length > 0 && (
@@ -60,7 +60,7 @@ export default function ColumnCount({ table }: { table: TableLike }) {
               cursor: 'pointer',
             }}
           >
-            {open ? 'NULL 許可カラムを隠す' : `NULL 許可カラムを表示 (${nullableNames.length})`}
+            {open ? 'Hide nullable columns' : `Show nullable columns (${nullableNames.length})`}
           </button>
           {open && (
             <ul style={{ margin: '6px 0 0', paddingLeft: '1.2em' }}>

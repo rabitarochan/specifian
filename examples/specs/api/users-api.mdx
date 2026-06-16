@@ -1,39 +1,39 @@
 ---
-title: ユーザー API
-description: ユーザー管理・認証関連のエンドポイント
+title: Users API
+description: Endpoints for user management and authentication
 endpoint:
   method: GET
   path: /api/users
-  description: ユーザー一覧を取得する
+  description: Retrieve a list of users
   params:
-    - { name: page, type: integer, required: false, description: "ページ番号（デフォルト: 1）" }
-    - { name: limit, type: integer, required: false, description: "1 ページあたりの件数（デフォルト: 20）" }
-    - { name: role, type: string, required: false, description: ロールでフィルタリング }
+    - { name: page, type: integer, required: false, description: "Page number (default: 1)" }
+    - { name: limit, type: integer, required: false, description: "Number of items per page (default: 20)" }
+    - { name: role, type: string, required: false, description: Filter by role }
 ---
 
 # {title}
 
-ユーザー情報の取得・作成・更新を行う API。
+API for retrieving, creating, and updating user information.
 
-ステータス: <StatusBadge status="published" />
+Status: <StatusBadge status="published" />
 
 <DataView data={data.endpoint} />
 
-## リクエスト例
+## Request Example
 
 ```bash
 GET /api/users?page=1&limit=20&role=member
 Authorization: Bearer <token>
 ```
 
-## レスポンス例
+## Response Example
 
-| ステータスコード | 説明 |
+| Status Code | Description |
 |---|---|
-| 200 | 取得成功 |
-| 400 | パラメータが不正 |
-| 401 | 認証が必要 |
-| 500 | サーバーエラー |
+| 200 | Successfully retrieved |
+| 400 | Invalid parameters |
+| 401 | Authentication required |
+| 500 | Server error |
 
 ### 200 OK
 
@@ -64,13 +64,13 @@ Authorization: Bearer <token>
 }
 ```
 
-## 設計メモ
+## Design Notes
 
-- 認証には Bearer トークンを使用します
-- ページネーション必須で、大量のデータ取得を防いでいます
-- role パラメータでのフィルタリングをサポートしています
+- Bearer token authentication is used.
+- Pagination is required to prevent fetching large amounts of data at once.
+- Filtering by the `role` parameter is supported.
 
-## 関連スペック
+## Related Specs
 
-- [[tables:users]] — ユーザーテーブル定義
-- [[api:_]] — API 仕様一覧
+- [[tables:users]] — Users table definition
+- [[api:_]] — API specification index

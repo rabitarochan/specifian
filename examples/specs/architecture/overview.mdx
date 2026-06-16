@@ -1,31 +1,31 @@
 ---
-title: システム構成図
-description: specifian サンプルプロジェクトの全体構成
+title: System Architecture Diagram
+description: Overall architecture of the specifian sample project
 ---
 
-# システム構成図
+# System Architecture Diagram
 
-サンプルプロジェクトは、フロントエンド（ブラウザー）、バックエンド API サーバー、データベースの 3 層構成です。
+The sample project uses a three-tier architecture: a frontend (browser), a backend API server, and a database.
 
-## システムレイアウト
+## System Layout
 
 ```mermaid
 graph TD
-    A["ブラウザー<br/>(React UI)"]
-    B["API サーバー<br/>(Express)"]
-    C["データベース<br/>(PostgreSQL)"]
+    A["Browser<br/>(React UI)"]
+    B["API Server<br/>(Express)"]
+    C["Database<br/>(PostgreSQL)"]
     
     A -->|HTTP/REST| B
     B -->|SQL| C
 ```
 
-## ER 図
+## ER Diagram
 
-テーブル間の関連を示します。users テーブルと posts テーブルの 1 対多の関係です。
+Shows the relationships between tables. The users table and posts table have a one-to-many relationship.
 
 ```mermaid
 erDiagram
-    USERS ||--o{ POSTS : "投稿する"
+    USERS ||--o{ POSTS : "posts"
     USERS {
         bigint id PK
         string email UK
@@ -38,8 +38,8 @@ erDiagram
     }
 ```
 
-## 関連スペック
+## Related Specs
 
-- [[tables:users]] — ユーザーテーブル定義
-- [[tables:posts]] — 投稿テーブル定義
-- [[api:users-api]] — ユーザー管理 API
+- [[tables:users]] — Users table definition
+- [[tables:posts]] — Posts table definition
+- [[api:users-api]] — User management API

@@ -1,37 +1,37 @@
 ---
-title: ログイン画面
-description: ユーザーが認証情報を入力するメイン画面
+title: Login Screen
+description: The main screen where users enter their authentication credentials
 screen:
   route: /login
   fields:
-    - { name: メールアドレス, type: email, required: true, description: "ユーザーのメールアドレス" }
-    - { name: パスワード, type: password, required: true, description: "アカウントのパスワード" }
+    - { name: Email, type: email, required: true, description: "User's email address" }
+    - { name: Password, type: password, required: true, description: "Account password" }
   actions:
-    - { name: ログイン, description: "認証情報を送信してログイン" }
-    - { name: パスワードリセットへ遷移, description: "パスワード忘却フロー" }
+    - { name: Log In, description: "Submit credentials to authenticate" }
+    - { name: Go to Password Reset, description: "Forgotten password flow" }
 ---
 
 # {title}
 
-アカウント認証を行う最初の画面。メールアドレスとパスワードを入力し、サーバーで検証します。
+The first screen where account authentication takes place. The user enters their email address and password, which are then verified on the server.
 
-## ワイヤーフレーム
+## Wireframe
 
 <Drawing src="screens/login" />
 
-## 画面項目
+## Screen Fields
 
 <DataView data={data.screen.fields} />
 
-## 振る舞い
+## Behavior
 
-- **メールアドレス検証** — RFC 5322 に準拠したフォーマットチェック
-- **パスワード検証** — 最小 8 文字、空白不可
-- **失敗時エラーメッセージ** — メールアドレスまたはパスワードが不正な旨を通知
-- **レート制限** — 10 回失敗後 5 分間ブロック
-- **パスワード忘却** — クリックで `/reset-password` へ遷移
+- **Email validation** — Format check conforming to RFC 5322
+- **Password validation** — Minimum 8 characters, no whitespace allowed
+- **Error message on failure** — Notify the user that the email address or password is incorrect
+- **Rate limiting** — Block for 5 minutes after 10 failed attempts
+- **Forgot password** — Click to navigate to `/reset-password`
 
-## 関連スペック
+## Related Specs
 
-- [[tables:users]] — ユーザーテーブル定義
-- [[api:users-api]] — ユーザー認証 API
+- [[tables:users]] — Users table definition
+- [[api:users-api]] — User authentication API

@@ -1,11 +1,11 @@
 /**
- * ステータスを色付きのピル型バッジで表示するサンプルコンポーネント。
+ * Sample component that displays a status as a colored pill badge.
  *
- * specs/_components/ に置いたファイルは、全 MDX から import 不要で使えます。
- * ファイル名 (PascalCase) または named export 名がコンポーネント名になります。
+ * Files placed in specs/_components/ are available in all MDX files without an explicit import.
+ * The file name (PascalCase) or named export name becomes the component name.
  *
- * 注意: _components 内のファイルは 'react' 以外を import できません。
- *       CSS も import できないため、スタイルはインライン (style 属性) で記述します。
+ * Note: Files inside _components can only import from 'react'.
+ *       CSS imports are also not allowed — use inline styles (the style attribute) instead.
  */
 import * as React from 'react';
 
