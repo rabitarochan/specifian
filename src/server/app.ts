@@ -13,6 +13,7 @@ import { searchRouter } from './routes/search.js';
 import { componentsRouter } from './routes/components.js';
 import { validationRouter } from './routes/validation.js';
 import { schemaRouter } from './routes/schema.js';
+import { guideRouter } from './routes/guide.js';
 import { drawingsRouter } from './routes/drawings.js';
 import { lintRouter } from './routes/lint.js';
 import { renameRouter, refsRouter } from './routes/rename.js';
@@ -45,6 +46,7 @@ export function createServer(options: ServerOptions): SpecifianServer {
   app.use('/api/components', componentsRouter(specsDir));
   app.use('/api/validation', validationRouter(specsDir));
   app.use('/api/schema', schemaRouter(specsDir));
+  app.use('/api/guide', guideRouter(specsDir));
   app.use('/api/drawings', drawingsRouter(specsDir));
   app.use('/api/lint', lintRouter(specsDir));
   app.use('/api/rename', renameRouter(specsDir));

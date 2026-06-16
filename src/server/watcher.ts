@@ -31,7 +31,14 @@ function broadcast(wss: WebSocketServer, message: FsEvent): void {
 export function startWatcher(specsDir: string, wss: WebSocketServer): () => void {
   const watcher = chokidar.watch(specsDir, {
     ignoreInitial: true,
-    ignored: /(^|[/\\])\../,
+    // Ignore dot-prefixed segments WITHIN the tree (e.g. .git), but never the
+    // watched root itself — the specs dir is commonly a dot folder (`.specs`),
+    // and a plain /\../ regex would match the root and silently watch nothing.
+    ignored: (p: string) => {
+      const rel = normalizePath(path.relative(specsDir, p));
+      if (rel === '' || rel.startsWith('..')) return false;
+      return rel.split('/').some((seg) => seg.startsWith('.'));
+    },
     awaitWriteFinish: {
       stabilityThreshold: 150,
       pollInterval: 50,
@@ -49,9 +56,16 @@ export function startWatcher(specsDir: string, wss: WebSocketServer): () => void
       // Also notify for Excalidraw drawing files (*.excalidraw) with specId: null.
       const isExcalidraw = rel.endsWith('.excalidraw');
 
+      // Authoring guides (_guide.md) are not specs; notify with specId: null so the
+      // client can refetch the guide panel for the affected category.
+      const isGuide = rel === '_guide.md' || rel.endsWith('/_guide.md');
+
       if (!/\.mdx?$/.test(rel) && !isUserComponent && !isExcalidraw) return;
 
-      const specId = isUserComponent || isExcalidraw ? null : pathToSpecId(specsDir, filePath);
+      const specId =
+        isUserComponent || isExcalidraw || isGuide
+          ? null
+          : pathToSpecId(specsDir, filePath);
       const msg: FsEvent = {
         type: 'fs',
         event,

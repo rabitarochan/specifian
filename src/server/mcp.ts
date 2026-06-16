@@ -28,7 +28,8 @@ import {
   deleteSpec,
   SpecOpsError,
 } from './specOps.js';
-import { validateSpecs } from './validate.js';
+import { validateSpecs, loadCategorySchema } from './validate.js';
+import { loadGuide, hasGuide } from './guide.js';
 import { runGenerator, listGenerators } from './generate.js';
 import {
   parseSpecId,
@@ -148,6 +149,74 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     },
   );
 
+  // ── list_guides ─────────────────────────────────────────────────────────
+  server.registerTool(
+    'list_guides',
+    {
+      description:
+        'Discover the current category structure. Returns { category, hasGuide, hasSchema }[] ' +
+        'covering the project root (category "") and every category that contains specs. ' +
+        'hasGuide indicates a _guide.md authoring guide; hasSchema indicates a _schema.json. ' +
+        'Call this first to learn what exists, then call get_guide (root, then the target category) ' +
+        'before creating or editing a spec.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const specs = await loadSpecs(specsDir);
+        const categories = new Set<string>(['']);
+        for (const s of specs) categories.add(s.category);
+        const result: { category: string; hasGuide: boolean; hasSchema: boolean }[] = [];
+        for (const cat of [...categories].sort()) {
+          const guidePresent = await hasGuide(specsDir, cat);
+          const schemaResult = await loadCategorySchema(specsDir, cat);
+          result.push({
+            category: cat,
+            hasGuide: guidePresent,
+            hasSchema: schemaResult.schema !== null,
+          });
+        }
+        return ok(result);
+      } catch (err) {
+        return fail(errMessage(err));
+      }
+    },
+  );
+
+  // ── get_guide ───────────────────────────────────────────────────────────
+  server.registerTool(
+    'get_guide',
+    {
+      description:
+        'Return the authoring guide (_guide.md) for a category as Markdown. ' +
+        'Omit category for the project-wide root guide. ' +
+        'Before creating or editing a spec, read the root guide first, then the target ' +
+        "category's guide, to follow its conventions and record the expected information. " +
+        'Returns { category, guide, title?, description? } where guide is null when no _guide.md exists.',
+      inputSchema: {
+        category: z
+          .string()
+          .optional()
+          .describe('Category path ("/" separated); omit for the root/project-wide guide'),
+      },
+    },
+    async ({ category }) => {
+      try {
+        const cat = category ?? '';
+        const result = await loadGuide(specsDir, cat);
+        if (result.error !== undefined) return fail(result.error);
+        return ok({
+          category: cat,
+          guide: result.guide,
+          title: result.title,
+          description: result.description,
+        });
+      } catch (err) {
+        return fail(errMessage(err));
+      }
+    },
+  );
+
   // ── write_spec ──────────────────────────────────────────────────────────
   server.registerTool(
     'write_spec',
@@ -155,6 +224,8 @@ export async function startMcpServer(specsDir: string): Promise<void> {
       description:
         'Overwrite the content of an existing spec. ' +
         'id is in "category:slug" format. content is the full MDX text including front-matter. ' +
+        "Before editing, call get_guide for the spec's category to follow its conventions and " +
+        'record the expected information. ' +
         'Returns an error when the spec does not exist (use create_spec to create a new one). ' +
         'Runs lint after saving and returns { meta, issues }. ' +
         '(issues are informational — the save always completes.)',
@@ -214,10 +285,13 @@ export async function startMcpServer(specsDir: string): Promise<void> {
       description:
         'Create a new spec (same semantics as POST /api/specs). ' +
         'category is the category path ("/" separated, e.g. "tables" or "api/v1"); slug is the filename without extension. ' +
+        "Before authoring, call get_guide for the category to follow its conventions. " +
         'The category directory must already exist. ' +
         'Returns an error when a spec with the same name already exists. ' +
         'If _template.mdx exists in the category it is copied and its front-matter title is replaced; ' +
-        'otherwise a minimal template (title + heading) is generated. Returns { meta }.',
+        'otherwise a minimal template (title + heading) is generated. ' +
+        "Returns { meta, guide } where guide is the category's _guide.md (null if none) so you can " +
+        'immediately fill in the spec following its conventions.',
       inputSchema: {
         category: z
           .string()
@@ -279,7 +353,10 @@ export async function startMcpServer(specsDir: string): Promise<void> {
       const id = toSpecId(cat, slug);
       const meta = await findMeta(specsDir, id);
       if (!meta) return fail('Failed to read spec after creation');
-      return ok({ meta });
+
+      // Surface the category guide so the agent can author following its conventions.
+      const guideResult = await loadGuide(specsDir, cat);
+      return ok({ meta, guide: guideResult.guide });
     },
   );
 
