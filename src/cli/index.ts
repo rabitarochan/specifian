@@ -7,6 +7,7 @@ import { loadSpecs } from '../server/store.js';
 import { runGenerator } from '../server/generate.js';
 import { validateSpecs } from '../server/validate.js';
 import { startMcpServer } from '../server/mcp.js';
+import { generateAgentsDoc } from '../server/agents.js';
 
 const VERSION = '0.1.0';
 
@@ -181,6 +182,29 @@ program
     } catch (err) {
       console.error(
         'Failed to start MCP server:',
+        err instanceof Error ? err.message : err,
+      );
+      process.exit(1);
+    }
+  });
+
+// agents command
+program
+  .command('agents')
+  .description('Generate an AGENTS.md that teaches AI agents how to use specifian')
+  .option('--out <file>', 'Output file path', './AGENTS.md')
+  .action(async (opts: { out: string }) => {
+    const outPath = path.resolve(opts.out);
+    try {
+      await fs.promises.writeFile(outPath, generateAgentsDoc(), 'utf-8');
+      console.log(`✅ Generated: ${outPath}`);
+      console.log(
+        'This file is static — agents discover categories at runtime via MCP, ' +
+          'so you need not regenerate it when adding categories.',
+      );
+    } catch (err) {
+      console.error(
+        'Failed to generate AGENTS.md:',
         err instanceof Error ? err.message : err,
       );
       process.exit(1);
