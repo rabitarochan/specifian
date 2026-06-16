@@ -143,8 +143,11 @@ export function GuidePanel({ category, defaultCollapsed = false }: Props) {
           ) : raw == null || body.trim() === '' ? (
             <p className="sb-guide-panel__empty">No guide yet.</p>
           ) : (
+            // Render the raw guide (front-matter included). remark-frontmatter consumes
+            // and hides the front-matter — same path specs use. Passing the front-matter-
+            // stripped body instead triggers a `data` redeclaration conflict in compileMdx.
             <MdxRenderer
-              content={body}
+              content={raw}
               specs={specs}
               category={category}
               slug="_guide"
