@@ -14,6 +14,7 @@ import type {
   SearchResult,
   ValidationReport,
   CategorySchemaResponse,
+  GuideResponse,
   DrawingMeta,
   ApiError,
   SaveSpecResponse,
@@ -178,6 +179,22 @@ export function fetchCategorySchema(
   category: string,
 ): Promise<CategorySchemaResponse> {
   return request<CategorySchemaResponse>(`/api/schema/${category}`);
+}
+
+/** GET /api/guide/<category> — _guide.md for the category (root = empty category; guide: null if none) */
+export function fetchGuide(category: string): Promise<GuideResponse> {
+  return request<GuideResponse>(`/api/guide/${category}`);
+}
+
+/** PUT /api/guide/<category> — save (also creates a new _guide.md) */
+export function saveGuide(
+  category: string,
+  content: string,
+): Promise<GuideResponse> {
+  return request<GuideResponse>(`/api/guide/${category}`, {
+    method: 'PUT',
+    body: JSON.stringify({ content }),
+  });
 }
 
 /** GET /api/drawings/<path> — fetch an Excalidraw scene JSON (path without extension; 404 throws ApiHttpError) */

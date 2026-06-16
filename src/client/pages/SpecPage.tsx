@@ -15,6 +15,7 @@ import { useValidation } from '../components/ValidationProvider';
 import { useToast } from '../components/Toast';
 import { useDebounced } from '../hooks/useDebounced';
 import { MdxRenderer } from '../components/MdxRenderer';
+import { GuidePanel } from '../components/GuidePanel';
 import { Editor } from '../components/Editor';
 import { SchemaForm } from '../form/SchemaForm';
 import type { JsonSchema } from '../form/schemaTypes';
@@ -261,6 +262,8 @@ export function SpecPage({ category, slug, specId }: Props) {
           </button>
         </div>
       )}
+
+      <GuidePanel category={category} defaultCollapsed />
 
       {editing ? (
         <div className="sb-split">

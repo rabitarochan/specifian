@@ -10,6 +10,7 @@ import { fetchSpec, createSpec, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
 import { useToast } from '../components/Toast';
 import { MdxRenderer } from '../components/MdxRenderer';
+import { GuidePanel } from '../components/GuidePanel';
 import { MdxProvider } from '../mdx/MdxContext';
 import { SpecList } from '../components/mdx/SpecList';
 
@@ -80,6 +81,7 @@ export function CategoryIndexPage({ category }: { category: string }) {
             </button>
           </div>
         </header>
+        <GuidePanel category={category} />
         <MdxRenderer
           content={detail.content}
           specs={specs}
@@ -101,6 +103,7 @@ export function CategoryIndexPage({ category }: { category: string }) {
           </button>
         </div>
       </header>
+      <GuidePanel category={category} />
       <div className="sb-prose">
         <MdxProvider value={{ specs, category }}>
           <SpecList category={category} />

@@ -15,7 +15,7 @@ interface Props {
 
 /** Valid slug pattern */
 const SLUG_PATTERN = /^[A-Za-z0-9_-]+$/;
-const RESERVED_SLUGS = new Set(['_', '_template']);
+const RESERVED_SLUGS = new Set(['_', '_template', '_guide']);
 
 export function RenameSpecDialog({ specId, onClose }: Props) {
   const parsed = parseSpecId(specId);

@@ -8,6 +8,7 @@ import type { SpecDetail } from '@shared/types';
 import { fetchSpec, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
 import { MdxRenderer } from '../components/MdxRenderer';
+import { GuidePanel } from '../components/GuidePanel';
 
 export function Home() {
   const { specs } = useSpecs();
@@ -47,6 +48,7 @@ export function Home() {
   if (detail && !notFound) {
     return (
       <article className="sb-content">
+        <GuidePanel category="" />
         <MdxRenderer
           content={detail.content}
           specs={specs}
@@ -64,6 +66,7 @@ export function Home() {
 
   return (
     <article className="sb-content">
+      <GuidePanel category="" />
       <div className="sb-prose">
         <h1>Welcome to specifian</h1>
         <p>
