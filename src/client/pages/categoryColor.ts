@@ -1,4 +1,4 @@
-/** カテゴリー名を安定したパレット色へマッピングする (グラフのノード色分け用) */
+/** Maps a category name to a stable palette color (used for graph node color-coding). */
 
 const PALETTE = [
   '#4f46e5', // indigo (accent)

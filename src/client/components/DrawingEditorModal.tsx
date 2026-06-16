@@ -1,11 +1,11 @@
 /**
- * Excalidraw エディターをフルスクリーン寄りのモーダルで開く。
- * - initialScene を restore() で正規化して initialData に渡す
- * - 保存: serializeAsJSON → JSON.parse → saveDrawing → トースト → onSaved → 閉じる
- * - キャンセル / Escape / ✕ で破棄して閉じる
+ * Opens the Excalidraw editor in a near-fullscreen modal.
+ * - Normalizes initialScene via restore() and passes it to initialData
+ * - Save: serializeAsJSON → JSON.parse → saveDrawing → toast → onSaved → close
+ * - Cancel / Escape / ✕ discards changes and closes
  *
- * Excalidraw 本体は本コンポーネントが描画されたときだけ動的にロードされる
- * (excalidrawModule の loadExcalidraw 経由)。
+ * The Excalidraw library is loaded dynamically only when this component mounts
+ * (via excalidrawModule's loadExcalidraw).
  */
 import { useEffect, useRef, useState } from 'react';
 import type {
@@ -21,9 +21,9 @@ type SerializeAsJSON =
   (typeof import('@excalidraw/excalidraw'))['serializeAsJSON'];
 
 interface Props {
-  /** specsDir 相対・拡張子なしパス (例: "screens/login") */
+  /** Path relative to specsDir, without extension (e.g. "screens/login") */
   src: string;
-  /** 取得済みシーン (新規の場合は null) */
+  /** Pre-fetched scene (null for new drawings) */
   initialScene: unknown | null;
   onClose: () => void;
   onSaved: () => void;
@@ -48,14 +48,14 @@ export function DrawingEditorModal({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Excalidraw 本体のロードと initialData の準備
+  // Load the Excalidraw library and prepare initialData
   useEffect(() => {
     let cancelled = false;
     setLoadError(null);
     (async () => {
       try {
         const mod = await loadExcalidraw();
-        // 手書き / 部分シーンも安全に開けるよう restore で正規化する
+        // Normalize via restore so hand-written / partial scenes open safely
         const restored = await restoreScene(initialScene ?? {});
         if (cancelled) return;
         setExcalidraw(() => mod.Excalidraw);
@@ -76,7 +76,7 @@ export function DrawingEditorModal({
     };
   }, [initialScene]);
 
-  // Escape で閉じる
+  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -99,7 +99,7 @@ export function DrawingEditorModal({
       );
       const scene = JSON.parse(json) as unknown;
       await saveDrawing(src, scene);
-      toast.show('保存しました');
+      toast.show('Saved');
       onSaved();
       onClose();
     } catch (err: unknown) {
@@ -114,7 +114,7 @@ export function DrawingEditorModal({
         className="sb-drawing-modal"
         role="dialog"
         aria-modal="true"
-        aria-label={`図の編集: ${src}`}
+        aria-label={`Edit drawing: ${src}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sb-drawing-modal__head">
@@ -128,15 +128,15 @@ export function DrawingEditorModal({
               onClick={() => void handleSave()}
               disabled={!Excalidraw || saving}
             >
-              {saving ? '保存中…' : '保存'}
+              {saving ? 'Saving…' : 'Save'}
             </button>
             <button className="sb-btn" onClick={onClose} disabled={saving}>
-              キャンセル
+              Cancel
             </button>
             <button
               className="sb-icon-btn"
               onClick={onClose}
-              aria-label="閉じる"
+              aria-label="Close"
             >
               ×
             </button>
@@ -146,21 +146,21 @@ export function DrawingEditorModal({
           {loadError ? (
             <div className="sb-mermaid-error" role="alert">
               <div className="sb-mermaid-error__title">
-                エディターの読み込みに失敗しました
+                Failed to load editor
               </div>
               <pre>{loadError}</pre>
             </div>
           ) : Excalidraw && initialData ? (
             <Excalidraw
               initialData={initialData}
-              langCode="ja-JP"
+              langCode="en-US"
               excalidrawAPI={(api) => {
                 apiRef.current = api;
               }}
             />
           ) : (
             <div className="sb-drawing-modal__loading">
-              エディターを読み込み中…
+              Loading editor…
             </div>
           )}
         </div>

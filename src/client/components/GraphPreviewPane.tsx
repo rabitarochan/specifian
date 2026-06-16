@@ -1,8 +1,8 @@
 /**
- * グラフのノード選択時に右ペインへ表示するプレビュー。
- * - ヘッダー: タイトル + ID バッジ + 「ページを開く」 + ✕ 閉じる
- * - 本文: fetchSpec で取得した MDX を MdxRenderer で描画 (.sb-content 風のパディング)
- * - 状態: 読み込み中 / 取得エラー、selected 変化で再取得 (stale 結果は破棄)
+ * Preview shown in the right pane when a graph node is selected.
+ * - Header: title + ID badge + "Open page" + ✕ close
+ * - Body: MDX fetched via fetchSpec rendered by MdxRenderer (.sb-content-style padding)
+ * - State: loading / fetch error; re-fetches when selected changes (stale results discarded)
  */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,12 +13,12 @@ import { useSpecs } from './SpecsProvider';
 import { MdxRenderer } from './MdxRenderer';
 
 interface Props {
-  /** 選択中のスペック ID ("tables:users") */
+  /** ID of the selected spec ("tables:users") */
   id: string;
-  /** グラフが解決しているタイトル (取得前のヘッダー表示用) */
+  /** Title resolved by the graph (shown in the header before fetch completes) */
   title: string;
   onClose: () => void;
-  /** プレビュー内の wiki リンクで選択スペックを切り替える */
+  /** Switch the selected spec via wiki links inside the preview */
   onSelect: (id: string) => void;
 }
 
@@ -33,7 +33,7 @@ export function GraphPreviewPane({ id, title, onClose, onSelect }: Props) {
   useEffect(() => {
     if (!parsed) {
       setDetail(null);
-      setError('不正なスペック ID です。');
+      setError('Invalid spec ID.');
       return;
     }
     let active = true;
@@ -50,13 +50,13 @@ export function GraphPreviewPane({ id, title, onClose, onSelect }: Props) {
             ? err.message
             : err instanceof Error
               ? err.message
-              : '読み込みに失敗しました。';
+              : 'Failed to load.';
         setError(msg);
       });
     return () => {
       active = false;
     };
-    // category / slug が変われば再取得
+    // Re-fetch when category / slug changes
   }, [parsed?.category, parsed?.slug]);
 
   const headerTitle = detail?.meta.title ?? title;
@@ -73,13 +73,13 @@ export function GraphPreviewPane({ id, title, onClose, onSelect }: Props) {
             className="sb-btn sb-btn--primary"
             onClick={() => navigate(specRoute(id))}
           >
-            ページを開く
+            Open page
           </button>
           <button
             className="sb-icon-btn"
             onClick={onClose}
-            aria-label="プレビューを閉じる"
-            title="閉じる"
+            aria-label="Close preview"
+            title="Close"
           >
             ✕
           </button>
@@ -88,11 +88,11 @@ export function GraphPreviewPane({ id, title, onClose, onSelect }: Props) {
       <div className="sb-graph-preview__body">
         {error ? (
           <div className="sb-error-panel" role="alert">
-            <div className="sb-error-panel__title">読み込みエラー</div>
+            <div className="sb-error-panel__title">Load Error</div>
             <div className="sb-error-panel__message">{error}</div>
           </div>
         ) : !detail || !parsed ? (
-          <div className="sb-loading">読み込み中…</div>
+          <div className="sb-loading">Loading…</div>
         ) : (
           <MdxRenderer
             content={detail.content}

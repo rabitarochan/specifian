@@ -1,34 +1,34 @@
 /**
- * SchemaForm 内で共有する純粋ヘルパー群。
- * すべて非破壊 (新しいオブジェクト/配列を返す)。
+ * Pure helpers shared within SchemaForm.
+ * All are non-mutating (they return new objects/arrays).
  */
 import type { JsonSchema, JsonSchemaType } from './schemaTypes';
 import { primaryType } from './schemaTypes';
 
-/** フィールドのラベル: schema.title ?? key */
+/** Field label: schema.title ?? key */
 export function fieldLabel(schema: JsonSchema, key: string): string {
   return schema.title ?? key;
 }
 
-/** key が required か */
+/** Whether the key is required */
 export function isRequired(parent: JsonSchema | undefined, key: string): boolean {
   return parent?.required?.includes(key) ?? false;
 }
 
-/** array の items スキーマを取り出す (無ければ空オブジェクト) */
+/** Extracts the items schema from an array schema (returns {} if absent). */
 export function itemsSchema(schema: JsonSchema): JsonSchema {
   return schema.items ?? {};
 }
 
-/** スカラー型か (string/number/integer/boolean) */
+/** Whether the type is a scalar (string/number/integer/boolean). */
 export function isScalarType(t: JsonSchemaType | null): boolean {
   return t === 'string' || t === 'number' || t === 'integer' || t === 'boolean';
 }
 
 /**
- * items が「全プロパティがスカラーのオブジェクト」か判定。
- * テーブルウィジェット採用の条件。properties が存在し、空でなく、
- * すべての値の primaryType がスカラーであること。
+ * Determines whether items is "an object where all properties are scalars".
+ * This is the condition for using the table widget: properties must exist,
+ * be non-empty, and every property's primaryType must be a scalar.
  */
 export function isAllScalarObject(schema: JsonSchema): boolean {
   if (primaryType(schema) !== 'object') return false;
@@ -39,16 +39,15 @@ export function isAllScalarObject(schema: JsonSchema): boolean {
   return keys.every((k) => isScalarType(primaryType(props[k])));
 }
 
-/** object スキーマか (properties を持つ、または type=object) */
+/** Whether the schema is an object schema (has properties, or type=object). */
 export function isObjectSchema(schema: JsonSchema): boolean {
   return primaryType(schema) === 'object';
 }
 
 /**
- * スキーマの default に基づく新規値を生成する。
- * default があればそれを (ディープコピーして) 返す。
- * object なら required から最小の {} を作るのではなく空オブジェクト、
- * array なら空配列、scalar なら型に応じた空値。
+ * Generates a new value based on the schema's default.
+ * Returns a deep copy of the default if one exists.
+ * Otherwise: empty object for object, empty array for array, type-appropriate empty value for scalars.
  */
 export function defaultValueFor(schema: JsonSchema): unknown {
   if (schema.default !== undefined) {
@@ -66,13 +65,13 @@ export function defaultValueFor(schema: JsonSchema): unknown {
       return '';
     case 'number':
     case 'integer':
-      return undefined; // 数値は空 = キー未設定
+      return undefined; // empty number = key not set
     default:
       return undefined;
   }
 }
 
-/** JSON 互換値のディープコピー */
+/** Deep-copies a JSON-compatible value. */
 export function cloneValue<T>(value: T): T {
   if (value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) {
@@ -85,7 +84,7 @@ export function cloneValue<T>(value: T): T {
   return out as T;
 }
 
-/** object 値を取り出す (配列・null・非オブジェクトは {} 扱い) */
+/** Extracts an object value (arrays, null, and non-objects are treated as {}). */
 export function asRecord(value: unknown): Record<string, unknown> {
   if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -93,13 +92,13 @@ export function asRecord(value: unknown): Record<string, unknown> {
   return {};
 }
 
-/** array 値を取り出す (非配列は [] 扱い) */
+/** Extracts an array value (non-arrays are treated as []). */
 export function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
 /**
- * record から指定キーを除いた新しい record を返す (非破壊)。
+ * Returns a new record with the specified key omitted (non-mutating).
  */
 export function omitKey(
   record: Record<string, unknown>,
@@ -113,8 +112,8 @@ export function omitKey(
 }
 
 /**
- * record にキーを設定した新しい record を返す (非破壊、挿入順を維持)。
- * 既存キーは位置を保ったまま値を差し替え、新規キーは末尾に追加する。
+ * Returns a new record with the key set (non-mutating, preserving insertion order).
+ * Existing keys keep their position with the value replaced; new keys are appended.
  */
 export function setKey(
   record: Record<string, unknown>,
@@ -126,7 +125,7 @@ export function setKey(
   return next;
 }
 
-/** value のキーのうち schema.properties に存在しないものを返す */
+/** Returns keys of value that are not present in schema.properties. */
 export function extraKeys(
   value: Record<string, unknown>,
   schema: JsonSchema,

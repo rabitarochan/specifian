@@ -42,11 +42,11 @@ export function startWatcher(specsDir: string, wss: WebSocketServer): () => void
     return (filePath: string) => {
       const rel = normalizePath(path.relative(specsDir, filePath));
 
-      // ユーザー定義コンポーネント (_components/*.tsx|jsx) も通知する (specId: null)。
+      // Also notify for user-defined components (_components/*.tsx|jsx) with specId: null.
       const isUserComponent =
         rel.startsWith('_components/') && /\.(tsx|jsx)$/.test(rel);
 
-      // Excalidraw 図ファイル (*.excalidraw) も通知する (specId: null)。
+      // Also notify for Excalidraw drawing files (*.excalidraw) with specId: null.
       const isExcalidraw = rel.endsWith('.excalidraw');
 
       if (!/\.mdx?$/.test(rel) && !isUserComponent && !isExcalidraw) return;

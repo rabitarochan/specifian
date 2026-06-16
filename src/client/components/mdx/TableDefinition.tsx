@@ -1,6 +1,6 @@
 /**
- * DB テーブル定義の描画。
- * data 形状: { name, description?, columns: [{ name, type, nullable?, default?, primaryKey?, foreignKey?, description? }] }
+ * Renders a DB table definition.
+ * data shape: { name, description?, columns: [{ name, type, nullable?, default?, primaryKey?, foreignKey?, description? }] }
  */
 import { Warning } from './Warning';
 
@@ -30,7 +30,7 @@ export function TableDefinition({ data }: { data?: unknown }) {
   if (!isTableData(data)) {
     return (
       <Warning title="TableDefinition">
-        テーブル定義データが不正です (<code>name</code> と <code>columns</code> が必要です)。
+        Invalid table definition data (<code>name</code> and <code>columns</code> are required).
       </Warning>
     );
   }
@@ -46,12 +46,12 @@ export function TableDefinition({ data }: { data?: unknown }) {
       <table className="sb-table-def__table">
         <thead>
           <tr>
-            <th>列名</th>
-            <th>型</th>
+            <th>Column</th>
+            <th>Type</th>
             <th>NULL</th>
-            <th>デフォルト</th>
-            <th>キー</th>
-            <th>説明</th>
+            <th>Default</th>
+            <th>Key</th>
+            <th>Description</th>
           </tr>
         </thead>
         <tbody>

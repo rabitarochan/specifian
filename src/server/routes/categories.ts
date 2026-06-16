@@ -16,13 +16,13 @@ title: ${categoryPath}
 
 const DEFAULT_TEMPLATE_CONTENT = (categoryPath: string) =>
   `---
-title: 新しいスペック
+title: New Spec
 description: ''
 ---
 
-# 新しいスペック
+# New Spec
 
-スペックの説明をここに記述します。
+Describe the spec here.
 `;
 
 export function categoriesRouter(specsDir: string): Router {
@@ -31,7 +31,7 @@ export function categoriesRouter(specsDir: string): Router {
   router.post('/', async (req: Request, res: Response) => {
     const body = req.body as CreateCategoryRequest;
     if (!body.path) {
-      res.status(400).json({ error: 'path は必須です' });
+      res.status(400).json({ error: 'path is required' });
       return;
     }
 
@@ -40,14 +40,14 @@ export function categoriesRouter(specsDir: string): Router {
     const newDir = path.join(specsDir, ...parts);
 
     if (!guardPath(specsDir, newDir)) {
-      res.status(400).json({ error: 'パストラバーサルが検出されました' });
+      res.status(400).json({ error: 'Path traversal detected' });
       return;
     }
 
     // Check existence
     try {
       await fs.access(newDir);
-      res.status(409).json({ error: `カテゴリー "${categoryPath}" は既に存在します` });
+      res.status(409).json({ error: `Category "${categoryPath}" already exists` });
       return;
     } catch {
       // Expected: directory does not exist

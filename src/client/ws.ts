@@ -1,7 +1,7 @@
 /**
- * 再接続機能つき WebSocket クライアント。
- * `/ws` を購読し、fs イベントをリスナーへ配信する。
- * Vite dev は /ws を ws://localhost:4399 へ proxy する。
+ * WebSocket client with auto-reconnect.
+ * Subscribes to `/ws` and dispatches fs events to listeners.
+ * Vite dev proxies /ws to ws://localhost:4399.
  */
 import type { FsEvent } from '@shared/types';
 
@@ -39,7 +39,7 @@ function connect(): void {
         for (const l of listeners) l(data);
       }
     } catch {
-      // 不正な JSON は無視
+      // Ignore malformed JSON
     }
   });
 
@@ -49,7 +49,7 @@ function connect(): void {
   });
 
   socket.addEventListener('error', () => {
-    // close が続けて発火するため、ここでは閉じるだけ
+    // 'close' fires right after 'error', so just close here
     socket?.close();
   });
 }
@@ -64,8 +64,8 @@ function scheduleReconnect(): void {
 }
 
 /**
- * fs イベントを購読する。最初の購読時に接続を開始する。
- * 返り値の関数で購読解除する。
+ * Subscribe to fs events. Opens the connection on the first subscription.
+ * Returns a function that removes the subscription.
  */
 export function subscribeFsEvents(listener: Listener): () => void {
   listeners.add(listener);

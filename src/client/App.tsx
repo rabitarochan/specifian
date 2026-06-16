@@ -1,4 +1,4 @@
-/** ルーティングとプロバイダーの組み立て */
+/** Assembles routing and providers. */
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { SpecsProvider } from './components/SpecsProvider';

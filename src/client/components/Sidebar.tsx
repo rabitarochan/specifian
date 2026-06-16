@@ -1,8 +1,8 @@
 /**
- * 左サイドバー: アプリ名 + ナビ (ホーム/グラフ) + カテゴリーツリー。
- * カテゴリーはネストパス (`api/v1`) を木構造に展開して表示する。
- * ヘッダーに「新しいカテゴリー」、各カテゴリーに「スペックを追加」ボタン。
- * スペック行に「⋯」hover メニュー (リネーム / 削除)。
+ * Left sidebar: app name + nav (Home/Graph) + category tree.
+ * Categories are expanded into a tree from nested paths (e.g. `api/v1`).
+ * Header has a "New Category" button; each category has an "Add Spec" button.
+ * Spec rows have a "⋯" hover menu (Rename / Delete).
  */
 import { useMemo, useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
@@ -18,19 +18,19 @@ import { RenameSpecDialog } from './RenameSpecDialog';
 import { DeleteSpecDialog } from './DeleteSpecDialog';
 
 interface TreeNode {
-  /** このノードのフルパス ("api", "api/v1") */
+  /** Full path of this node (e.g. "api", "api/v1") */
   path: string;
-  /** 表示名 (末尾セグメント) */
+  /** Display name (last path segment) */
   name: string;
   children: Map<string, TreeNode>;
-  /** このカテゴリーに直接属する非インデックス・非テンプレートのスペック */
+  /** Specs directly belonging to this category (excluding index and template) */
   specs: SpecMeta[];
-  /** このカテゴリーが実在する (specs を 1 つ以上含む or 子を持つ) */
+  /** Whether this category exists (has at least one spec or a child) */
 }
 
 function buildTree(specs: SpecMeta[]): TreeNode {
   const root: TreeNode = { path: '', name: '', children: new Map(), specs: [] };
-  // すべてのカテゴリーを列挙 (空のカテゴリーも _ / _template のみで存在しうる)
+  // Enumerate all categories (even empty ones that only have _ / _template)
   const categories = new Set<string>();
   for (const s of specs) categories.add(s.category);
 
@@ -58,9 +58,9 @@ function buildTree(specs: SpecMeta[]): TreeNode {
   return root;
 }
 
-/** スペック行に付けるスキーマ違反バッジ */
+/** Schema-violation badge shown on spec rows */
 function IssueBadge({ issues }: { issues: ValidationIssue[] }) {
-  const title = `${issues.length} 件のスキーマ違反\n${issues
+  const title = `${issues.length} schema violation${issues.length !== 1 ? 's' : ''}\n${issues
     .map((i) => `${i.path}: ${i.message}`)
     .join('\n')}`;
   return (
@@ -71,9 +71,9 @@ function IssueBadge({ issues }: { issues: ValidationIssue[] }) {
 }
 
 /**
- * スペック行に hover で現れる ⋯ ポップオーバーメニュー。
- * 「リネーム」「削除」の 2 アクションを提供する。
- * 外部クリック / Escape で閉じる。
+ * ⋯ popover menu that appears on hover for a spec row.
+ * Provides two actions: Rename and Delete.
+ * Closes on outside click or Escape.
  */
 function SpecRowMenu({
   specId,
@@ -87,7 +87,7 @@ function SpecRowMenu({
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // 外部クリックで閉じる
+  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
@@ -99,7 +99,7 @@ function SpecRowMenu({
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  // Escape で閉じる
+  // Close on Escape
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
@@ -113,8 +113,8 @@ function SpecRowMenu({
     <div className="sb-row-menu-wrap" ref={menuRef}>
       <button
         className="sb-icon-btn sb-tree__more"
-        title="メニュー"
-        aria-label="メニューを開く"
+        title="Menu"
+        aria-label="Open menu"
         aria-haspopup="true"
         aria-expanded={open}
         onClick={(e) => {
@@ -136,7 +136,7 @@ function SpecRowMenu({
               onRename(specId);
             }}
           >
-            リネーム
+            Rename
           </button>
           <button
             className="sb-row-menu__item sb-row-menu__item--danger"
@@ -147,7 +147,7 @@ function SpecRowMenu({
               onDelete(specId);
             }}
           >
-            削除
+            Delete
           </button>
         </div>
       )}
@@ -190,7 +190,7 @@ function CategoryNode({
         </NavLink>
         <button
           className="sb-icon-btn sb-tree__add"
-          title="スペックを追加"
+          title="Add spec"
           onClick={() => onAddSpec(node.path)}
         >
           ＋
@@ -263,7 +263,7 @@ export function Sidebar() {
         <span className="sb-search-btn__icon" aria-hidden="true">
           🔍
         </span>
-        <span className="sb-search-btn__label">検索</span>
+        <span className="sb-search-btn__label">Search</span>
         <kbd className="sb-kbd">Ctrl+K</kbd>
       </button>
 
@@ -275,7 +275,7 @@ export function Sidebar() {
             isActive ? 'sb-nav-link sb-nav-link--active' : 'sb-nav-link'
           }
         >
-          ホーム
+          Home
         </NavLink>
         <NavLink
           to="/graph"
@@ -283,15 +283,15 @@ export function Sidebar() {
             isActive ? 'sb-nav-link sb-nav-link--active' : 'sb-nav-link'
           }
         >
-          グラフ
+          Graph
         </NavLink>
       </nav>
 
       <div className="sb-sidebar__section-head">
-        <span>カテゴリー</span>
+        <span>Categories</span>
         <button
           className="sb-icon-btn"
-          title="新しいカテゴリー"
+          title="New category"
           onClick={() => setShowCategory(true)}
         >
           ＋
@@ -300,7 +300,7 @@ export function Sidebar() {
 
       <ul className="sb-tree">
         {topLevel.length === 0 && (
-          <li className="sb-tree__empty">カテゴリーがありません</li>
+          <li className="sb-tree__empty">No categories</li>
         )}
         {topLevel.map((node) => (
           <CategoryNode

@@ -1,6 +1,6 @@
 /**
- * 全文検索コア — GET /api/search および MCP search ツールから共用する。
- * routes/search.ts のロジックをここに抽出。ルートは薄いラッパーになる。
+ * Full-text search core — shared by GET /api/search and the MCP search tool.
+ * Logic extracted from routes/search.ts; the route becomes a thin wrapper.
  */
 
 import fs from 'node:fs/promises';
@@ -19,8 +19,8 @@ const FIELD_RANK: Record<SearchResult['field'], number> = {
 const SNIPPET_CONTEXT = 40;
 
 /**
- * クエリーの前後 ~40 文字のスニペットを生成する。
- * 空白を正規化した単一行として返す。
+ * Generate a snippet with ~40 characters of context around the query match.
+ * Returned as a single line with whitespace normalised.
  */
 function makeSnippet(text: string, query: string): string {
   const normalized = text.replace(/\s+/g, ' ').trim();
@@ -38,7 +38,7 @@ function makeSnippet(text: string, query: string): string {
 }
 
 /**
- * 本文の最初の非空行を返す (タイトルマッチ時のスニペット代替)。
+ * Return the first non-empty line of the body (used as a snippet fallback on title matches).
  */
 function firstBodyLine(body: string): string {
   for (const line of body.split('\n')) {
@@ -49,13 +49,13 @@ function firstBodyLine(body: string): string {
 }
 
 /**
- * スペックを全文検索して結果を返す。
- * フィールド優先順: title > description > data (front-matter JSON) > body。
- * _template は除外、_ (インデックス) は含める。
+ * Full-text search across specs and return results.
+ * Field priority: title > description > data (front-matter JSON) > body.
+ * _template is excluded; _ (index) is included.
  *
- * @param specsDir - specs ディレクトリーの絶対パス
- * @param q        - 検索クエリー (空文字の場合は [] を返す)
- * @param limit    - 最大返却件数 (呼び出し元でクランプ済みを想定)
+ * @param specsDir - Absolute path to the specs directory
+ * @param q        - Search query (returns [] when empty)
+ * @param limit    - Maximum number of results (caller is expected to clamp this value)
  */
 export async function searchSpecs(
   specsDir: string,
@@ -65,14 +65,14 @@ export async function searchSpecs(
   if (!q) return [];
 
   const allSpecs = await loadSpecs(specsDir);
-  // _template 除外、_ インデックスは含める
+  // Exclude _template; include _ index entries
   const specs = allSpecs.filter((s) => s.slug !== '_template');
 
   const lowerQ = q.toLowerCase();
   const results: SearchResult[] = [];
 
   for (const spec of specs) {
-    // --- title マッチ ---
+    // --- title match ---
     if (spec.title.toLowerCase().includes(lowerQ)) {
       let snippet = '';
       if (spec.description) {
@@ -98,7 +98,7 @@ export async function searchSpecs(
       continue;
     }
 
-    // --- description マッチ ---
+    // --- description match ---
     if (spec.description && spec.description.toLowerCase().includes(lowerQ)) {
       results.push({
         id: spec.id,
@@ -111,7 +111,7 @@ export async function searchSpecs(
       continue;
     }
 
-    // --- front-matter data マッチ ---
+    // --- front-matter data match ---
     const dataStr = JSON.stringify(spec.data);
     if (dataStr.toLowerCase().includes(lowerQ)) {
       results.push({
@@ -125,7 +125,7 @@ export async function searchSpecs(
       continue;
     }
 
-    // --- 本文マッチ (ファイル読み込みが必要) ---
+    // --- body match (requires reading the file) ---
     const absPath = path.join(specsDir, ...spec.path.split('/'));
     try {
       const raw = await fs.readFile(absPath, 'utf-8');
@@ -142,11 +142,11 @@ export async function searchSpecs(
         });
       }
     } catch {
-      // 読み込めないファイルはスキップ
+      // Skip files that cannot be read
     }
   }
 
-  // フィールドランク → spec ID の順でソート
+  // Sort by field rank, then by spec ID
   results.sort((a, b) => {
     const rankDiff = FIELD_RANK[a.field] - FIELD_RANK[b.field];
     if (rankDiff !== 0) return rankDiff;

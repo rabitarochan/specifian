@@ -13,8 +13,8 @@ export default defineConfig({
   server: {
     port: 5180,
     proxy: {
-      // 前方一致だと /api.ts (src/client/api.ts のモジュール URL) まで
-      // プロキシされてしまうため、正規表現キーで API パスだけに限定する
+      // A prefix match would also proxy /api.ts (the module URL for
+      // src/client/api.ts), so use regex keys to limit it to API paths only
       '^/api/': 'http://localhost:4399',
       '^/ws$': { target: 'ws://localhost:4399', ws: true },
     },

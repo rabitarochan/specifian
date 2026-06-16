@@ -1,20 +1,20 @@
 /**
- * @excalidraw/excalidraw を遅延ロードするためのモジュールローダー。
- * mermaid と同じく dynamic import でメインバンドルから分離し、
- * Drawing / エディターが実際に表示されたときだけ読み込む。
+ * Module loader that lazily loads @excalidraw/excalidraw.
+ * Like mermaid, it is split from the main bundle via dynamic import
+ * and loaded only when a Drawing / editor is actually rendered.
  *
- * v0.18.1 はスタイルを自己注入しないため `@excalidraw/excalidraw/index.css` を
- * 明示的に import する必要がある (本ファイルの動的 import 内で読み込む)。
+ * v0.18.1 does not self-inject styles, so `@excalidraw/excalidraw/index.css`
+ * must be imported explicitly (loaded inside the dynamic import in this file).
  */
 type ExcalidrawModule = typeof import('@excalidraw/excalidraw');
 
 let modulePromise: Promise<ExcalidrawModule> | null = null;
 
-/** Excalidraw 本体 (と CSS) を一度だけロードしてキャッシュする */
+/** Loads the Excalidraw library (and its CSS) once and caches the result. */
 export function loadExcalidraw(): Promise<ExcalidrawModule> {
   if (!modulePromise) {
     modulePromise = (async () => {
-      // CSS を先に読み込む (v0.18 は自己注入しない)
+      // Load CSS first (v0.18 does not self-inject it)
       await import('@excalidraw/excalidraw/index.css');
       return import('@excalidraw/excalidraw');
     })();
@@ -22,7 +22,7 @@ export function loadExcalidraw(): Promise<ExcalidrawModule> {
   return modulePromise;
 }
 
-/** restore() に渡せる最低限のシーン形状 */
+/** Minimal scene shape accepted by restore(). */
 export interface RawScene {
   elements?: unknown;
   appState?: unknown;
@@ -30,17 +30,17 @@ export interface RawScene {
 }
 
 /**
- * 取得した (手書きの可能性もある) シーンを Excalidraw の restore() で正規化する。
- * 部分的 / 手書きのシーンファイルでも安全に描画・編集できるようにする。
+ * Normalizes a fetched (possibly hand-written) scene via Excalidraw's restore().
+ * Makes partial / hand-written scene files safe to render and edit.
  *
- * 既知の注意点: initialData として渡す場合 appState.collaborators は Map である必要が
- * あるが、restore() の出力は collaborators を含まない正規化済み appState を返すため
- * そのまま initialData に渡しても問題ない (Map 化は不要)。
+ * Known caveat: when passed as initialData, appState.collaborators must be a Map,
+ * but restore() returns a normalized appState without collaborators, so passing it
+ * directly to initialData is safe (no Map conversion needed).
  */
 export async function restoreScene(scene: unknown) {
   const { restore } = await loadExcalidraw();
   const raw = (scene ?? {}) as RawScene;
-  // restore は elements/appState/files を受け取り、欠落や不正値を補完する
+  // restore takes elements/appState/files and fills in missing or invalid values
   return restore(
     {
       elements: (raw.elements as never) ?? [],
@@ -53,8 +53,8 @@ export async function restoreScene(scene: unknown) {
 }
 
 /**
- * シーンを静的 SVG に描画する。閲覧時はエディターを起動せずこれだけを使う。
- * 入力は restore() で正規化してから exportToSvg に渡す。
+ * Renders a scene as a static SVG. Used in view mode without launching the editor.
+ * Input is normalized via restore() before being passed to exportToSvg.
  */
 export async function renderSceneSvg(scene: unknown): Promise<SVGSVGElement> {
   const mod = await loadExcalidraw();

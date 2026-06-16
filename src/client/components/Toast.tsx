@@ -1,4 +1,4 @@
-/** 右下に表示する一時的なトースト通知。ToastProvider で囲み useToast() で表示する */
+/** Temporary toast notification displayed in the bottom-right corner. Wrap with ToastProvider and call useToast() to show. */
 import {
   createContext,
   useCallback,

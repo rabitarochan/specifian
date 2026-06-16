@@ -1,4 +1,4 @@
-/** コンパイル/描画エラーをアプリを落とさず表示するパネル */
+/** Panel that displays compile/render errors without crashing the app. */
 
 export function ErrorPanel({ title, error }: { title: string; error: Error }) {
   const stack = error.stack?.split('\n').slice(0, 8).join('\n');

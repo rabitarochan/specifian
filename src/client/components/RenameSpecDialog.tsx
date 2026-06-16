@@ -1,4 +1,4 @@
-/** スペックをリネームするダイアログ */
+/** Dialog for renaming a spec. */
 import { useState, useMemo, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Modal } from './Modal';
@@ -8,12 +8,12 @@ import { useToast } from './Toast';
 import { toSpecId, specRoute, parseSpecId } from '@shared/types';
 
 interface Props {
-  /** リネーム元のスペック ID ("category:slug") */
+  /** ID of the spec to rename ("category:slug") */
   specId: string;
   onClose: () => void;
 }
 
-/** スラッグの有効パターン */
+/** Valid slug pattern */
 const SLUG_PATTERN = /^[A-Za-z0-9_-]+$/;
 const RESERVED_SLUGS = new Set(['_', '_template']);
 
@@ -22,7 +22,7 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
   const { specs, refetch } = useSpecs();
   const { show } = useToast();
   const navigate = useNavigate();
-  // 現在のルートパラメーター ("*" splat) で表示中スペックを判定する
+  // Determine the currently viewed spec from the "*" splat route param
   const params = useParams<{ '*': string }>();
 
   const [category, setCategory] = useState(parsed?.category ?? '');
@@ -30,7 +30,7 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // サイドバーの datalist に使う既存カテゴリー一覧
+  // Existing categories used for the sidebar datalist
   const categories = useMemo(
     () => [...new Set(specs.map((s) => s.category))].sort(),
     [specs],
@@ -42,19 +42,19 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
     const sl = slug.trim();
 
     if (!sl) {
-      setError('スラッグを入力してください。');
+      setError('Please enter a slug.');
       return;
     }
     if (!SLUG_PATTERN.test(sl)) {
-      setError('スラッグは半角英数字・ハイフン・アンダーバーのみ使用できます。');
+      setError('Slug may only contain alphanumeric characters, hyphens, and underscores.');
       return;
     }
     if (RESERVED_SLUGS.has(sl)) {
-      setError(`スラッグ "${sl}" は予約済みです。`);
+      setError(`Slug "${sl}" is reserved.`);
       return;
     }
     if (!cat) {
-      setError('カテゴリーを入力してください。');
+      setError('Please enter a category.');
       return;
     }
 
@@ -69,9 +69,9 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
     try {
       const res = await renameSpecId(specId, toId);
       await refetch();
-      show(`リネームしました（リンク ${res.rewrittenFiles.length} 件を書き換え）`);
+      show(`Renamed (${res.rewrittenFiles.length} link${res.rewrittenFiles.length !== 1 ? 's' : ''} updated)`);
 
-      // 現在閲覧中のスペックがリネーム元ならば新ルートへ遷移
+      // Navigate to the new route if the currently viewed spec was the one renamed
       const currentSplat = params['*'] ?? '';
       const oldParsed = parseSpecId(specId);
       if (oldParsed) {
@@ -84,29 +84,29 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
     } catch (err) {
       const msg =
         err instanceof ApiHttpError && err.status === 409
-          ? 'そのスペック ID は既に存在します。'
+          ? 'A spec with that ID already exists.'
           : err instanceof ApiHttpError && err.status === 404
-            ? 'リネーム元のスペックが見つかりません。'
+            ? 'Source spec not found.'
             : err instanceof ApiHttpError && err.status === 400
               ? err.message
               : err instanceof Error
                 ? err.message
-                : 'リネームに失敗しました。';
+                : 'Failed to rename.';
       setError(msg);
       setBusy(false);
     }
   };
 
   return (
-    <Modal title="スペックをリネーム" onClose={onClose}>
+    <Modal title="Rename Spec" onClose={onClose}>
       <form onSubmit={submit} className="sb-form">
         <div className="sb-field">
-          <span className="sb-field__label">現在の ID</span>
+          <span className="sb-field__label">Current ID</span>
           <span className="sb-id-badge" style={{ alignSelf: 'flex-start' }}>{specId}</span>
         </div>
 
         <label className="sb-field">
-          <span className="sb-field__label">カテゴリー</span>
+          <span className="sb-field__label">Category</span>
           <input
             className="sb-input"
             list="rename-categories"
@@ -124,7 +124,7 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
         </label>
 
         <label className="sb-field">
-          <span className="sb-field__label">スラッグ</span>
+          <span className="sb-field__label">Slug</span>
           <input
             className="sb-input"
             value={slug}
@@ -133,17 +133,17 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
             pattern="[A-Za-z0-9_\-]+"
             disabled={busy}
           />
-          <span className="sb-field__hint">半角英数字・ハイフン・アンダーバーのみ</span>
+          <span className="sb-field__hint">Alphanumeric, hyphens, and underscores only</span>
         </label>
 
         {error && <p className="sb-form__error">{error}</p>}
 
         <div className="sb-form__actions">
           <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
-            キャンセル
+            Cancel
           </button>
           <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
-            {busy ? 'リネーム中…' : 'リネーム'}
+            {busy ? 'Renaming…' : 'Rename'}
           </button>
         </div>
       </form>

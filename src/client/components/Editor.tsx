@@ -1,4 +1,4 @@
-/** CodeMirror ラッパー (markdown 言語、全高) */
+/** CodeMirror wrapper (markdown language, full height). */
 import CodeMirror from '@uiw/react-codemirror';
 import { markdown } from '@codemirror/lang-markdown';
 import { useMemo } from 'react';

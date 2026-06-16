@@ -1,11 +1,11 @@
 /**
- * 全文検索コマンドパレット。
- * - Ctrl+K / Cmd+K でグローバルに開閉 (preventDefault)、Esc で閉じる
- * - 入力は 150ms デバウンスで searchSpecs を叩くインクリメンタル検索
- * - ↑↓ で選択 (ラップ)、Enter で該当スペックへ遷移、マウスホバー/クリックでも選択・遷移
+ * Full-text search command palette.
+ * - Ctrl+K / Cmd+K globally toggles (preventDefault); Esc closes
+ * - Input triggers incremental search via searchSpecs with a 150ms debounce
+ * - ↑↓ to navigate (wraps), Enter to navigate to the spec, mouse hover/click also work
  *
- * 開閉状態は SearchPaletteProvider のコンテキストで共有し、
- * サイドバーの検索ボタンとグローバルホットキーの双方から開けるようにする。
+ * Open/close state is shared via SearchPaletteProvider context so both the
+ * sidebar search button and the global hotkey can open it.
  */
 import {
   createContext,
@@ -43,7 +43,7 @@ export function SearchPaletteProvider({ children }: { children: ReactNode }) {
   const openPalette = useCallback(() => setOpen(true), []);
   const closePalette = useCallback(() => setOpen(false), []);
 
-  // グローバル Ctrl+K / Cmd+K で開く
+  // Open globally with Ctrl+K / Cmd+K
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -71,7 +71,7 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounced(query, 150);
 
-  // 検索実行 (デバウンス済みクエリの変化で)
+  // Run search when the debounced query changes
   useEffect(() => {
     let active = true;
     searchSpecs(debouncedQuery)
@@ -90,7 +90,7 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
     };
   }, [debouncedQuery]);
 
-  // マウント時にオートフォーカス
+  // Auto-focus on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
@@ -134,7 +134,7 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
         className="sb-palette"
         role="dialog"
         aria-modal="true"
-        aria-label="スペックを検索"
+        aria-label="Search specs"
         onClick={(e) => e.stopPropagation()}
       >
         <input
@@ -142,16 +142,16 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
           className="sb-palette__input"
           type="text"
           value={query}
-          placeholder="スペックを検索…"
+          placeholder="Search specs…"
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          aria-label="検索キーワード"
+          aria-label="Search keyword"
         />
         <div className="sb-palette__results" role="listbox">
           {query.trim() === '' ? (
-            <div className="sb-palette__hint">スペックを検索…</div>
+            <div className="sb-palette__hint">Search specs…</div>
           ) : results.length === 0 ? (
-            <div className="sb-palette__hint">該当するスペックがありません</div>
+            <div className="sb-palette__hint">No matching specs</div>
           ) : (
             results.map((r, i) => (
               <div

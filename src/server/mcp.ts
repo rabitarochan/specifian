@@ -1,15 +1,15 @@
 /**
- * mcp.ts — specifian の MCP サーバー (stdio トランスポート)。
+ * mcp.ts — specifian MCP server (stdio transport).
  *
- * AI エージェント (Claude Code 等) が specifian のスペックドキュメントを
- * MCP ツール経由で読み書きできるようにする。
+ * Lets AI agents (e.g. Claude Code) read and write specifian spec documents
+ * via MCP tools.
  *
- * 重要: stdout は MCP (JSON-RPC) プロトコルに占有されているため、
- *       絶対に stdout へ書き込まないこと。ログはすべて console.error (stderr) へ。
+ * Important: stdout is reserved for the MCP (JSON-RPC) protocol.
+ *            Never write to stdout. All logging must go to console.error (stderr).
  *
- * 設計: docs/DESIGN.md「v5 機能設計: MCP サーバー」参照。
- * 既存のサーバーモジュール (store / searchCore / lintCore / specOps /
- * validate / generate) を再利用し、HTTP ルートと同じ意味論を保つ。
+ * Design: see docs/DESIGN.md "v5 feature design: MCP server".
+ * Reuses existing server modules (store / searchCore / lintCore / specOps /
+ * validate / generate) with the same semantics as the HTTP routes.
  */
 
 import fs from 'node:fs/promises';
@@ -37,9 +37,9 @@ import {
   type LintIssue,
 } from '../shared/types.js';
 
-// ─── ツール結果ヘルパー ───────────────────────────────────────────────────────
+// ─── Tool result helpers ──────────────────────────────────────────────────────
 
-/** 任意の値を JSON 文字列の text content に詰めて返す (成功レスポンス) */
+/** Wrap any value as a JSON string text content (success response). */
 function ok(result: unknown): {
   content: { type: 'text'; text: string }[];
 } {
@@ -48,7 +48,7 @@ function ok(result: unknown): {
   };
 }
 
-/** エラーレスポンス (isError: true)。SpecOpsError 等のメッセージをそのまま渡す */
+/** Error response (isError: true). Pass through the message from SpecOpsError etc. */
 function fail(message: string): {
   content: { type: 'text'; text: string }[];
   isError: true;
@@ -59,19 +59,19 @@ function fail(message: string): {
   };
 }
 
-/** unknown なエラーから人間可読なメッセージを取り出す */
+/** Extract a human-readable message from an unknown error. */
 function errMessage(err: unknown): string {
   if (err instanceof SpecOpsError) return err.message;
   if (err instanceof Error) return err.message;
   return String(err);
 }
 
-// ─── パス解決 (HTTP ルートと同じトラバーサルガード) ──────────────────────────
+// ─── Path resolution (same traversal guard as HTTP routes) ───────────────────
 
 /**
- * category + slug からスペックの絶対パスを解決する。
- * specsDir 外を指す場合は null を返す (呼び出し側でエラー化)。
- * HTTP ルート (routes/specs.ts) の guardPath と同じ意味論。
+ * Resolve the absolute MDX path from category + slug.
+ * Returns null when the resolved path is outside specsDir (caller handles the error).
+ * Same semantics as guardPath in routes/specs.ts.
  */
 function resolveMdxPath(
   specsDir: string,
@@ -84,19 +84,19 @@ function resolveMdxPath(
   return target;
 }
 
-/** 指定 ID のスペック meta を loadSpecs から再構築して返す (見つからなければ null) */
+/** Rebuild the SpecMeta for the given ID from loadSpecs; returns null when not found. */
 async function findMeta(specsDir: string, id: string): Promise<SpecMeta | null> {
   const specs = await loadSpecs(specsDir);
   return specs.find((s) => s.id === id) ?? null;
 }
 
-// ─── サーバー起動 ──────────────────────────────────────────────────────────────
+// ─── Server startup ───────────────────────────────────────────────────────────
 
 /**
- * specifian の MCP サーバーを stdio トランスポートで起動する。
- * Promise はトランスポートが閉じる (= プロセス終了相当) まで解決しない。
+ * Start the specifian MCP server on a stdio transport.
+ * The returned Promise does not resolve until the transport closes (equivalent to process exit).
  *
- * @param specsDir - specs ディレクトリーの絶対パス (呼び出し側で存在確認済みを想定)
+ * @param specsDir - Absolute path to the specs directory (caller must verify it exists)
  */
 export async function startMcpServer(specsDir: string): Promise<void> {
   const server = new McpServer({ name: 'specifian', version: '0.1.0' });
@@ -106,10 +106,10 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'list_specs',
     {
       description:
-        'specs ディレクトリー内の全スペックのメタ情報 (SpecMeta[]) を返します。' +
-        '各要素には id ("category:slug" 形式)、category、slug、path、title、' +
-        'description、front-matter 全体 (data)、本文中の wiki リンク先 ID (links)、' +
-        'isIndex が含まれます。_template は除外されます。',
+        'Return metadata (SpecMeta[]) for all specs in the specs directory. ' +
+        'Each element includes id ("category:slug" format), category, slug, path, title, ' +
+        'description, the full front-matter (data), wiki link target IDs in the body (links), ' +
+        'and isIndex. _template is excluded.',
       inputSchema: {},
     },
     async () => {
@@ -127,23 +127,23 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'read_spec',
     {
       description:
-        '指定したスペックの meta と content を返します。' +
-        'id は "category:slug" 形式 (例: "tables:users"、インデックスは "tables:_")。' +
-        'content は front-matter を含む生の MDX 全文です。' +
-        '存在しない場合はエラーになります。',
+        'Return the meta and content for the specified spec. ' +
+        'id is in "category:slug" format (e.g. "tables:users"; index is "tables:_"). ' +
+        'content is the raw MDX text including front-matter. ' +
+        'Returns an error when the spec does not exist.',
       inputSchema: {
         id: z
           .string()
-          .describe('スペック ID。"category:slug" 形式 (例: "tables:users")'),
+          .describe('Spec ID in "category:slug" format (e.g. "tables:users")'),
       },
     },
     async ({ id }) => {
       const parsed = parseSpecId(id);
-      if (!parsed) return fail(`無効なスペック ID: ${id}`);
+      if (!parsed) return fail(`Invalid spec ID: ${id}`);
       const target = resolveMdxPath(specsDir, parsed.category, parsed.slug);
-      if (!target) return fail('パストラバーサルは許可されていません');
+      if (!target) return fail('Path traversal is not allowed');
       const result = await loadSpec(specsDir, target);
-      if (!result) return fail(`スペックが見つかりません: ${id}`);
+      if (!result) return fail(`Spec not found: ${id}`);
       return ok(result);
     },
   );
@@ -153,44 +153,44 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'write_spec',
     {
       description:
-        '既存スペックの内容を上書き保存します。' +
-        'id は "category:slug" 形式。content は front-matter を含む MDX 全文。' +
-        '対象が存在しない場合はエラーになります (新規作成は create_spec を使ってください)。' +
-        '保存後に lint を実行し、{ meta, issues } を返します ' +
-        '(issues は情報提供であり、保存自体は常に実行されます)。',
+        'Overwrite the content of an existing spec. ' +
+        'id is in "category:slug" format. content is the full MDX text including front-matter. ' +
+        'Returns an error when the spec does not exist (use create_spec to create a new one). ' +
+        'Runs lint after saving and returns { meta, issues }. ' +
+        '(issues are informational — the save always completes.)',
       inputSchema: {
         id: z
           .string()
-          .describe('上書きする既存スペックの ID。"category:slug" 形式'),
+          .describe('ID of the existing spec to overwrite, in "category:slug" format'),
         content: z
           .string()
-          .describe('front-matter を含む MDX 全文 (ファイル全体を置き換えます)'),
+          .describe('Full MDX text including front-matter (replaces the entire file)'),
       },
     },
     async ({ id, content }) => {
       const parsed = parseSpecId(id);
-      if (!parsed) return fail(`無効なスペック ID: ${id}`);
+      if (!parsed) return fail(`Invalid spec ID: ${id}`);
       const target = resolveMdxPath(specsDir, parsed.category, parsed.slug);
-      if (!target) return fail('パストラバーサルは許可されていません');
+      if (!target) return fail('Path traversal is not allowed');
 
-      // 既存スペックのみ対象 (存在チェック)
+      // Only existing specs can be written (existence check)
       try {
         await fs.access(target);
       } catch {
         return fail(
-          `スペックが見つかりません: ${id}。新規作成は create_spec を使ってください。`,
+          `Spec not found: ${id}. Use create_spec to create a new one.`,
         );
       }
 
       try {
         await fs.writeFile(target, content, 'utf-8');
       } catch (err) {
-        return fail(`保存に失敗しました: ${errMessage(err)}`);
+        return fail(`Failed to save: ${errMessage(err)}`);
       }
 
       const meta = await findMeta(specsDir, id);
 
-      // 保存後 lint (失敗しても保存は成功扱い)
+      // Lint after save (lint failure does not affect save success)
       let issues: LintIssue[];
       try {
         issues = await lintContent(specsDir, {
@@ -199,7 +199,7 @@ export async function startMcpServer(specsDir: string): Promise<void> {
           slug: parsed.slug,
         });
       } catch (lintErr) {
-        console.error('[mcp] lintContent 失敗 (無視):', lintErr);
+        console.error('[mcp] lintContent failed (ignored):', lintErr);
         issues = [];
       }
 
@@ -212,53 +212,53 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'create_spec',
     {
       description:
-        '新規スペックを作成します (POST /api/specs と同じ意味論)。' +
-        'category はカテゴリーパス ("/" 区切り、例: "tables" や "api/v1")、slug はファイル名 (拡張子なし)。' +
-        'カテゴリーディレクトリーは事前に存在している必要があります。' +
-        '同名スペックが既に存在する場合はエラーになります。' +
-        'カテゴリー内に _template.mdx があればそれをコピーし front-matter の title を置き換えます。' +
-        '無ければ最小テンプレート (title + 見出し) を生成します。戻り値は { meta }。',
+        'Create a new spec (same semantics as POST /api/specs). ' +
+        'category is the category path ("/" separated, e.g. "tables" or "api/v1"); slug is the filename without extension. ' +
+        'The category directory must already exist. ' +
+        'Returns an error when a spec with the same name already exists. ' +
+        'If _template.mdx exists in the category it is copied and its front-matter title is replaced; ' +
+        'otherwise a minimal template (title + heading) is generated. Returns { meta }.',
       inputSchema: {
         category: z
           .string()
-          .describe('カテゴリーパス ("/" 区切り。ルート直下は空文字)。例: "tables"'),
-        slug: z.string().describe('スペックのファイル名 (拡張子なし)。例: "users"'),
+          .describe('Category path ("/" separated; empty string for root). Example: "tables"'),
+        slug: z.string().describe('Spec filename without extension. Example: "users"'),
         title: z
           .string()
           .optional()
-          .describe('front-matter の title。省略時は slug が使われます'),
+          .describe('front-matter title; defaults to slug when omitted'),
       },
     },
     async ({ category, slug, title }) => {
-      if (!slug) return fail('slug は必須です');
+      if (!slug) return fail('slug is required');
       const cat = category ?? '';
       const effectiveTitle = title ?? slug;
 
       const target = resolveMdxPath(specsDir, cat, slug);
-      if (!target) return fail('パストラバーサルは許可されていません');
+      if (!target) return fail('Path traversal is not allowed');
 
       const categoryParts = cat === '' ? [] : cat.split('/');
       const categoryDir = path.join(specsDir, ...categoryParts);
 
-      // カテゴリーディレクトリーの存在確認 (MCP は mkdir しない)
+      // Verify category directory exists (MCP does not mkdir)
       try {
         const stat = await fs.stat(categoryDir);
         if (!stat.isDirectory()) {
-          return fail(`カテゴリーがディレクトリーではありません: ${cat}`);
+          return fail(`Category path is not a directory: ${cat}`);
         }
       } catch {
-        return fail(`カテゴリーディレクトリーが存在しません: ${cat || '(ルート)'}`);
+        return fail(`Category directory does not exist: ${cat || '(root)'}`);
       }
 
-      // 既存チェック (409 相当)
+      // Check for existing file (equivalent to 409)
       try {
         await fs.access(target);
-        return fail(`"${slug}" は既に存在します`);
+        return fail(`"${slug}" already exists`);
       } catch {
-        // 期待どおり存在しない
+        // Expected: file does not exist
       }
 
-      // テンプレート適用 (無ければ最小テンプレート)
+      // Apply template (or fall back to minimal template)
       let content: string;
       const templatePath = path.join(categoryDir, '_template.mdx');
       try {
@@ -273,12 +273,12 @@ export async function startMcpServer(specsDir: string): Promise<void> {
       try {
         await fs.writeFile(target, content, 'utf-8');
       } catch (err) {
-        return fail(`作成に失敗しました: ${errMessage(err)}`);
+        return fail(`Failed to create: ${errMessage(err)}`);
       }
 
       const id = toSpecId(cat, slug);
       const meta = await findMeta(specsDir, id);
-      if (!meta) return fail('作成後のスペック読み込みに失敗しました');
+      if (!meta) return fail('Failed to read spec after creation');
       return ok({ meta });
     },
   );
@@ -288,15 +288,15 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'rename_spec',
     {
       description:
-        'スペックのファイル名を変更し、他の全スペックの wiki リンク [[from]] / [[from|ラベル]] を' +
-        '一括で [[to]] へ書き換えます (コードフェンス・インラインコード内は変更しません)。' +
-        'from / to はともに "category:slug" 形式のスペック ID。' +
-        'to のカテゴリーディレクトリーは存在している必要があります。' +
-        'インデックス (slug "_") / テンプレート (slug "_template") はリネームできません。' +
-        '戻り値は { meta, rewrittenFiles } (rewrittenFiles は実際にリンクを書き換えたスペック ID 一覧)。',
+        'Rename a spec file and rewrite all wiki links [[from]] / [[from|label]] across every spec ' +
+        'to [[to]] (links inside code fences and inline code are not changed). ' +
+        'Both from and to are spec IDs in "category:slug" format. ' +
+        "The target category directory must already exist. " +
+        'Index (slug "_") and template (slug "_template") specs cannot be renamed. ' +
+        'Returns { meta, rewrittenFiles } where rewrittenFiles is the list of spec IDs whose links were rewritten.',
       inputSchema: {
-        from: z.string().describe('変更元スペック ID。"category:slug" 形式'),
-        to: z.string().describe('変更先スペック ID。"category:slug" 形式'),
+        from: z.string().describe('Source spec ID in "category:slug" format'),
+        to: z.string().describe('Target spec ID in "category:slug" format'),
       },
     },
     async ({ from, to }) => {
@@ -314,18 +314,18 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'delete_spec',
     {
       description:
-        'スペックを削除します。id は "category:slug" 形式。' +
-        '削除前に参照元 (この ID を wiki リンクしているスペック) を調べ、' +
-        '戻り値 { ok: true, brokenRefs } で「壊れた参照」を通知します。' +
-        'brokenRefs が非空の場合、それらのスペックは未解決リンクを抱えることになります。' +
-        'インデックス (slug "_") やテンプレートも削除可能です。',
+        'Delete a spec. id is in "category:slug" format. ' +
+        'Back-references (specs that wiki-link to this id) are looked up before deletion, ' +
+        'and the result { ok: true, brokenRefs } reports any broken references. ' +
+        'When brokenRefs is non-empty, those specs will have unresolved links. ' +
+        'Index (slug "_") and template specs can also be deleted.',
       inputSchema: {
-        id: z.string().describe('削除するスペック ID。"category:slug" 形式'),
+        id: z.string().describe('Spec ID to delete, in "category:slug" format'),
       },
     },
     async ({ id }) => {
       try {
-        // 削除前に参照元を取得 (削除後だと links から消えるため)
+        // Collect back-references before deletion (they disappear from links afterwards)
         const refs = await findRefs(specsDir, id);
         await deleteSpec(specsDir, id);
         return ok({ ok: true, brokenRefs: refs });
@@ -340,10 +340,10 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'get_refs',
     {
       description:
-        '指定 ID を wiki リンクで参照しているスペック ID 一覧 ({ refs }) を返します。' +
-        'id は "category:slug" 形式。バックリンク確認や削除影響範囲の調査に使います。',
+        'Return the list of spec IDs ({ refs }) that reference the given ID via wiki links. ' +
+        'id is in "category:slug" format. Useful for checking back-links or assessing the impact of deletion.',
       inputSchema: {
-        id: z.string().describe('参照元を調べたいスペック ID。"category:slug" 形式'),
+        id: z.string().describe('Spec ID to look up back-references for, in "category:slug" format'),
       },
     },
     async ({ id }) => {
@@ -361,17 +361,17 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'search',
     {
       description:
-        'スペックを全文検索します。title > description > front-matter (data) > 本文 の優先順で' +
-        'マッチし、各ヒットに snippet (前後の文脈付き抜粋) と field (マッチ箇所) が付きます。' +
-        '_template は検索対象外。戻り値は SearchResult[]。',
+        'Full-text search across specs. Matches in priority order: title > description > front-matter (data) > body. ' +
+        'Each hit includes a snippet (excerpt with surrounding context) and the matched field. ' +
+        '_template is excluded. Returns SearchResult[].',
       inputSchema: {
-        query: z.string().describe('検索クエリー文字列 (大文字小文字を区別しません)'),
+        query: z.string().describe('Search query string (case-insensitive)'),
         limit: z
           .number()
           .int()
           .positive()
           .optional()
-          .describe('最大返却件数。省略時は 20'),
+          .describe('Maximum number of results; defaults to 20'),
       },
     },
     async ({ query, limit }) => {
@@ -389,15 +389,15 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'get_data',
     {
       description:
-        'スペックの front-matter (data) をまとめて返します。' +
-        'category を省略した場合は { category: { slug: data } } のネスト構造 (全カテゴリー)。' +
-        'category を指定した場合はそのカテゴリーの { slug: data } のみ。' +
-        '_template は除外されます。テーブル定義一覧の取得などに便利です。',
+        'Return front-matter (data) for specs in bulk. ' +
+        'When category is omitted, returns { category: { slug: data } } nested structure (all categories). ' +
+        'When category is specified, returns { slug: data } for that category only. ' +
+        '_template is excluded. Useful for fetching a list of table definitions, etc.',
       inputSchema: {
         category: z
           .string()
           .optional()
-          .describe('カテゴリーパス ("/" 区切り)。省略時は全カテゴリー'),
+          .describe('Category path ("/" separated); omit for all categories'),
       },
     },
     async ({ category }) => {
@@ -430,8 +430,8 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'validate',
     {
       description:
-        '_schema.json を持つカテゴリーについて、全スペックの front-matter を JSON Schema (ajv) で' +
-        '検証し、違反一覧 (ValidationReport { issues }) を返します。issues が空なら全件適合です。',
+        'For categories that have _schema.json, validate front-matter of all specs with JSON Schema (ajv) ' +
+        'and return a violation list (ValidationReport { issues }). Empty issues means full conformance.',
       inputSchema: {},
     },
     async () => {
@@ -449,20 +449,20 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'lint',
     {
       description:
-        '保存せずに MDX 全文を検証し、issues (LintIssue[]) を返します。' +
-        'チェック内容: YAML パース / MDX 構文 / wiki リンク解決 / (category 指定時) スキーマ検証。' +
-        'content は front-matter を含む MDX 全文。category/slug を渡すとスキーマ検証も行われます。' +
-        '保存前の事前チェックに使ってください。',
+        'Validate the full MDX text without saving and return issues (LintIssue[]). ' +
+        'Checks: YAML parse / MDX syntax / wiki link resolution / (when category is given) schema validation. ' +
+        'content is the full MDX text including front-matter. Passing category/slug also enables schema validation. ' +
+        'Use this for pre-save validation.',
       inputSchema: {
-        content: z.string().describe('front-matter を含む MDX 全文'),
+        content: z.string().describe('Full MDX text including front-matter'),
         category: z
           .string()
           .optional()
-          .describe('スキーマ検証に使うカテゴリー。省略時はスキーマ検証をスキップ'),
+          .describe('Category for schema validation; schema check is skipped when omitted'),
         slug: z
           .string()
           .optional()
-          .describe('対象 slug。"_" / "_template" はスキーマ検証対象外になります'),
+          .describe('Target slug; "_" / "_template" are excluded from schema validation'),
       },
     },
     async ({ content, category, slug }) => {
@@ -480,8 +480,8 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'list_generators',
     {
       description:
-        'specs/_generators/ 配下のコードジェネレーター名一覧 (string[]) を返します。' +
-        'generate ツールの generator 引数に使えます。',
+        'Return the list of code generator names (string[]) under specs/_generators/. ' +
+        'Use these names as the generator argument to the generate tool.',
       inputSchema: {},
     },
     async () => {
@@ -499,22 +499,22 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     'generate',
     {
       description:
-        'コードジェネレーターを実行します。generator は list_generators で得られる名前。' +
-        'specId ("category:slug") を指定するとそのスペックのみ、省略時は全スペックが対象。' +
-        'out を指定するとプロセスの cwd 相対でファイルをディスクに書き出します ' +
-        '(省略時は書き込まずレスポンスのみ)。戻り値は { files: { path, content }[] }。',
+        'Run a code generator. generator is a name obtained from list_generators. ' +
+        'Specify specId ("category:slug") to target a single spec; omit for all specs. ' +
+        'Specify out to write files to disk relative to the process cwd ' +
+        '(omit to return the output without writing). Returns { files: { path, content }[] }.',
       inputSchema: {
         generator: z
           .string()
-          .describe('ジェネレーター名 (specs/_generators/<name>.md)'),
+          .describe('Generator name (specs/_generators/<name>.md)'),
         specId: z
           .string()
           .optional()
-          .describe('対象スペック ID。"category:slug" 形式。省略時は全スペック'),
+          .describe('Target spec ID in "category:slug" format; omit for all specs'),
         out: z
           .string()
           .optional()
-          .describe('出力先ディレクトリー (cwd 相対)。省略時はディスクに書き込みません'),
+          .describe('Output directory (relative to cwd); omit to skip writing to disk'),
       },
     },
     async ({ generator, specId, out }) => {
@@ -534,11 +534,11 @@ export async function startMcpServer(specsDir: string): Promise<void> {
     },
   );
 
-  // ── トランスポート接続 ────────────────────────────────────────────────────
+  // ── Connect transport ─────────────────────────────────────────────────────
   const transport = new StdioServerTransport();
   await server.connect(transport);
 
-  // トランスポートが閉じるまでプロセスを生かす。
+  // Keep the process alive until the transport closes.
   await new Promise<void>((resolve) => {
     transport.onclose = () => resolve();
   });

@@ -1,6 +1,6 @@
 /**
- * ホーム。ルートの `_.mdx` (`GET /api/specs/_`) があれば描画。
- * 404 ならウェルカム + カテゴリー一覧を表示する。
+ * Home. Renders the root `_.mdx` (`GET /api/specs/_`) if it exists.
+ * Falls back to a welcome screen + category list on 404.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -18,7 +18,7 @@ export function Home() {
   useEffect(() => {
     let active = true;
     setLoading(true);
-    // ルート直下の _.mdx (category="", slug="_")
+    // Root-level _.mdx (category="", slug="_")
     fetchSpec('', '_')
       .then((d) => {
         if (!active) return;
@@ -42,7 +42,7 @@ export function Home() {
     };
   }, []);
 
-  if (loading) return <div className="sb-loading">読み込み中…</div>;
+  if (loading) return <div className="sb-loading">Loading…</div>;
 
   if (detail && !notFound) {
     return (
@@ -57,7 +57,7 @@ export function Home() {
     );
   }
 
-  // ウェルカム + カテゴリー一覧
+  // Welcome screen + category list
   const categories = [...new Set(specs.map((s) => s.category))].sort((a, b) =>
     a.localeCompare(b),
   );
@@ -65,14 +65,14 @@ export function Home() {
   return (
     <article className="sb-content">
       <div className="sb-prose">
-        <h1>specifian へようこそ</h1>
+        <h1>Welcome to specifian</h1>
         <p>
-          <code>specs/</code> 配下の MDX スペックを表示・編集できます。
-          左のサイドバーからカテゴリーやスペックを選んでください。
+          Browse and edit MDX specs under <code>specs/</code>.
+          Choose a category or spec from the sidebar on the left.
         </p>
         {categories.length > 0 ? (
           <>
-            <h2>カテゴリー</h2>
+            <h2>Categories</h2>
             <div className="sb-card-grid">
               {categories.map((cat) => (
                 <Link key={cat} to={`/specs/${cat}`} className="sb-card">
@@ -83,7 +83,7 @@ export function Home() {
           </>
         ) : (
           <p>
-            まだスペックがありません。サイドバーの「＋」から最初のカテゴリーを作成しましょう。
+            No specs yet. Use the "＋" button in the sidebar to create your first category.
           </p>
         )}
       </div>

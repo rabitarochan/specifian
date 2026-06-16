@@ -64,9 +64,9 @@ function buildHelpers(): HelperMap {
       .toLowerCase();
   });
 
-  // カラムオブジェクトを受け取り nullable: true のときだけ "?" を返す
-  // (scaffdog エンジンは undefined と boolean の比較を許さず、
-  //  "null" で始まる識別子は null リテラルとして字句解析されるため、この名前にしている)
+  // Takes a column object and returns "?" only when nullable: true.
+  // (The scaffdog engine does not allow comparing undefined with boolean, and
+  //  identifiers starting with "null" are lexed as null literals — hence this name.)
   defineHelper(helpers, 'optionalMark', (_ctx, value: unknown) => {
     if (value && typeof value === 'object' && (value as Record<string, unknown>).nullable === true) {
       return '?';
@@ -143,12 +143,12 @@ export async function runGenerator(
   try {
     generatorContent = await fs.readFile(generatorPath, 'utf-8');
   } catch {
-    throw new Error(`ジェネレーター "${generator}" が見つかりません: ${generatorPath}`);
+    throw new Error(`Generator "${generator}" not found: ${generatorPath}`);
   }
 
   const sections = parseGeneratorDoc(generatorContent);
   if (sections.length === 0) {
-    throw new Error(`ジェネレーター "${generator}" にテンプレートセクションが見つかりません`);
+    throw new Error(`Generator "${generator}" has no template sections`);
   }
 
   // Determine target specs
@@ -158,7 +158,7 @@ export async function runGenerator(
       : allSpecs.filter((s) => !s.isIndex && s.slug !== '_template');
 
   if (specId != null && targetSpecs.length === 0) {
-    throw new Error(`スペック "${specId}" が見つかりません`);
+    throw new Error(`Spec "${specId}" not found`);
   }
 
   const helpers = buildHelpers();

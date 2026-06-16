@@ -1,4 +1,4 @@
-/** 指定カテゴリーに新しいスペックを作成するダイアログ */
+/** Dialog for creating a new spec in the specified category. */
 import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { createSpec, ApiHttpError } from '../api';
@@ -19,11 +19,11 @@ export function NewSpecDialog({ category, onClose, onCreated }: Props) {
     e.preventDefault();
     const s = slug.trim();
     if (!s) {
-      setError('スラッグを入力してください。');
+      setError('Please enter a slug.');
       return;
     }
     if (s.startsWith('_') || /[\\/]/.test(s)) {
-      setError('スラッグに先頭の _ やスラッシュは使えません。');
+      setError('Slug cannot start with _ or contain slashes.');
       return;
     }
     setBusy(true);
@@ -34,20 +34,20 @@ export function NewSpecDialog({ category, onClose, onCreated }: Props) {
     } catch (err) {
       const msg =
         err instanceof ApiHttpError && err.status === 409
-          ? 'そのスペックは既に存在します。'
+          ? 'A spec with that slug already exists.'
           : err instanceof Error
             ? err.message
-            : '作成に失敗しました。';
+            : 'Failed to create.';
       setError(msg);
       setBusy(false);
     }
   };
 
   return (
-    <Modal title={`スペックを追加 (${category})`} onClose={onClose}>
+    <Modal title={`Add spec (${category})`} onClose={onClose}>
       <form onSubmit={submit} className="sb-form">
         <label className="sb-field">
-          <span className="sb-field__label">スラッグ (ファイル名)</span>
+          <span className="sb-field__label">Slug (filename)</span>
           <input
             className="sb-input"
             value={slug}
@@ -57,21 +57,21 @@ export function NewSpecDialog({ category, onClose, onCreated }: Props) {
           />
         </label>
         <label className="sb-field">
-          <span className="sb-field__label">タイトル (任意)</span>
+          <span className="sb-field__label">Title (optional)</span>
           <input
             className="sb-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="ユーザー"
+            placeholder="Users"
           />
         </label>
         {error && <p className="sb-form__error">{error}</p>}
         <div className="sb-form__actions">
           <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
-            キャンセル
+            Cancel
           </button>
           <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
-            作成
+            Create
           </button>
         </div>
       </form>

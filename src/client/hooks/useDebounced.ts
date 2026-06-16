@@ -1,4 +1,4 @@
-/** 値を指定ミリ秒だけ遅延して反映するフック (ライブプレビューのデバウンス用) */
+/** Hook that delays reflecting a value by the specified milliseconds (for live-preview debouncing). */
 import { useEffect, useState } from 'react';
 
 export function useDebounced<T>(value: T, delayMs: number): T {

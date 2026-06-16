@@ -1,8 +1,8 @@
 /**
- * front-matter スキーマバリデーションの結果を保持する共有ストア。
- * - マウント時に /api/validation を取得し、fs イベントごとに再取得する
- * - issuesBySpecId で specId 別にグルーピングして提供する
- * - 取得失敗時はアプリを落とさず前回値を保持する
+ * Shared store for front-matter schema validation results.
+ * - Fetches /api/validation on mount and re-fetches on each fs event
+ * - Provides results grouped by specId via issuesBySpecId
+ * - On fetch failure, keeps the previous value without crashing the app
  */
 import {
   createContext,
@@ -41,7 +41,7 @@ export function ValidationProvider({ children }: { children: ReactNode }) {
       const report = await fetchValidation();
       setAllIssues(report.issues);
     } catch {
-      // 取得失敗時は前回値を保持
+      // On fetch failure, keep the previous value
     }
   }, []);
 
@@ -49,7 +49,7 @@ export function ValidationProvider({ children }: { children: ReactNode }) {
     void refetch();
   }, [refetch]);
 
-  // fs イベントごとに再検証
+  // Re-validate on each fs event
   useEffect(() => {
     const unsub = onFsEvent(() => {
       void refetch();

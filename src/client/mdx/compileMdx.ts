@@ -1,17 +1,17 @@
 /**
- * MDX ランタイムコンパイル。
+ * MDX runtime compilation.
  *
- * scope 注入はソース変換で行う (estree ノードの手組みは脆いため):
- * front-matter の閉じ `---` 直後 (front-matter が無ければ先頭) に
+ * Scope injection is done via source transformation (hand-crafting estree nodes is fragile):
  * `export const specs = JSON.parse("...")` / `export const category = "..."` /
- * `export const slug = "..."` を挿入する。
- * front-matter が無い場合のみ `export const data = {};` も追加する
- * (front-matter がある場合は remark-mdx-frontmatter が `data` を生成するため重複させない)。
+ * `export const slug = "..."` are inserted immediately after the closing `---` of the
+ * front-matter block (or at the top if there is no front-matter).
+ * `export const data = {};` is added only when there is no front-matter
+ * (remark-mdx-frontmatter generates `data` when front-matter is present, so we must not duplicate it).
  *
- * さらに利便性のため `export const title = ...` を注入する。
- * remark-mdx-frontmatter は `name: 'data'` のとき top-level キーを個別 export しないため、
- * `data` から導出して `{title}` を裸の識別子として使えるようにする。
- * (注入位置は `data` 宣言より後ろになるよう front-matter / data 宣言の直後に置く)
+ * Additionally, `export const title = ...` is injected for convenience.
+ * remark-mdx-frontmatter with `name: 'data'` does not individually export top-level keys,
+ * so this derives title from `data` to make `{title}` usable as a bare identifier.
+ * (Injection is placed immediately after the front-matter / data declaration so it comes after `data`.)
  */
 import { evaluate } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
@@ -29,16 +29,16 @@ export interface MdxScope {
 }
 
 export interface CompiledMdx {
-  /** 描画可能なコンポーネント (props.components を受け取る) */
+  /** Renderable component (accepts props.components). */
   Content: ComponentType<{ components?: Record<string, unknown> }>;
 }
 
-/** 先頭の YAML front-matter ブロックの終端 (閉じ `---` 行の次) のインデックスを返す。無ければ -1 */
+/** Returns the index just after the closing `---` line of the leading YAML front-matter block. Returns -1 if absent. */
 function frontmatterEnd(source: string): number {
-  // 先頭が `---\n` (または `---\r\n`) で始まる場合のみ front-matter とみなす
+  // Only treat as front-matter if the source begins with `---\n` (or `---\r\n`)
   const opener = /^---[ \t]*\r?\n/.exec(source);
   if (!opener || opener.index !== 0) return -1;
-  // 閉じの `---` 行を探す
+  // Find the closing `---` line
   const closer = /\r?\n---[ \t]*(\r?\n|$)/.exec(source.slice(opener[0].length));
   if (!closer) return -1;
   return opener[0].length + closer.index + closer[0].length;
@@ -48,7 +48,7 @@ function injectScope(source: string, scope: MdxScope): string {
   const fmEnd = frontmatterEnd(source);
   const hasFrontmatter = fmEnd >= 0;
 
-  // JSON.stringify を二重にして JS リテラル文字列を作る (引用符・改行を安全にエスケープ)
+  // Double JSON.stringify to produce a JS string literal (safely escapes quotes and newlines)
   const specsLiteral = JSON.stringify(JSON.stringify(scope.specs));
   const lines = [
     `export const specs = JSON.parse(${specsLiteral});`,
@@ -56,11 +56,11 @@ function injectScope(source: string, scope: MdxScope): string {
     `export const slug = ${JSON.stringify(scope.slug)};`,
   ];
   if (!hasFrontmatter) {
-    // front-matter が無いときだけ data を補う
+    // Only add data when there is no front-matter
     lines.push('export const data = {};');
   }
-  // data から title を導出 ({title} を裸の識別子として使えるように)。
-  // slug をフォールバックにする。
+  // Derive title from data (so {title} can be used as a bare identifier).
+  // Fall back to slug.
   lines.push(
     `export const title = (data && data.title != null) ? data.title : ${JSON.stringify(scope.slug)};`,
   );

@@ -1,7 +1,7 @@
 /**
- * MDX 描画に渡す components マップ。
- * - 組み込みコンポーネント (TableDefinition / SpecList / DataView / SpecLink)
- * - `a` レンダラー: `#wiki:<target>` を検出して SpecLink (router Link) に変換する
+ * Components map passed to MDX rendering.
+ * - Built-in components (TableDefinition / SpecList / DataView / SpecLink)
+ * - `a` renderer: detects `#wiki:<target>` and converts it to a SpecLink (router Link)
  */
 import {
   isValidElement,
@@ -27,7 +27,7 @@ function Anchor({
     const target = href.slice(WIKI_PREFIX.length);
     return <SpecLink to={target}>{children}</SpecLink>;
   }
-  // 外部リンクは新規タブで開く (相対 / アンカーはそのまま)
+  // External links open in a new tab (relative / anchor links are left unchanged)
   const external = !!href && /^https?:\/\//.test(href);
   return (
     <a
@@ -40,7 +40,7 @@ function Anchor({
   );
 }
 
-/** code 要素の className ("language-mermaid" 等) と本文テキストを取り出す */
+/** Extracts the className (e.g. "language-mermaid") and body text from a code element. */
 function readCodeChild(
   child: ReactNode,
 ): { lang: string | null; text: string } | null {
@@ -53,8 +53,8 @@ function readCodeChild(
 }
 
 /**
- * pre レンダラー: ```mermaid フェンスを図に変換する。
- * それ以外のコードブロックは通常の <pre> として描画する。
+ * pre renderer: converts ```mermaid fences to diagrams.
+ * All other code blocks are rendered as normal <pre> elements.
  */
 function Pre({ children, ...rest }: HTMLAttributes<HTMLPreElement>) {
   const info = readCodeChild(children);

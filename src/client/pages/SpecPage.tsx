@@ -1,10 +1,10 @@
 /**
- * スペック表示/編集ページ。
- * - 上部バー: タイトル + ID バッジ + 表示/編集トグル + (編集時) 保存
- * - 編集モード: 左 CodeMirror / 右ライブプレビュー (300ms デバウンス)
- * - 保存: ボタン + Ctrl+S → PUT → トースト「保存しました」
- * - dirty インジケーター (●)
- * - WebSocket: 外部変更時、未編集なら自動再取得、編集中なら警告バナー
+ * Spec view/edit page.
+ * - Top bar: title + ID badge + view/edit toggle + (in edit mode) save
+ * - Edit mode: left CodeMirror / right live preview (300ms debounce)
+ * - Save: button + Ctrl+S → PUT → toast "Saved"
+ * - Dirty indicator (●)
+ * - WebSocket: auto-reload on external change when clean; show warning banner when dirty
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -26,7 +26,7 @@ type EditTab = 'text' | 'form';
 interface Props {
   category: string;
   slug: string;
-  /** 一致するスペックの ID ("api/v1:users") */
+  /** ID of the matching spec (e.g. "api/v1:users") */
   specId: string;
 }
 
@@ -42,9 +42,9 @@ export function SpecPage({ category, slug, specId }: Props) {
   const [saving, setSaving] = useState(false);
   const [externalChange, setExternalChange] = useState(false);
   const [editTab, setEditTab] = useState<EditTab>('text');
-  // 保存時の lint issues (amber バナーで表示)
+  // Lint issues from the last save (shown in an amber banner)
   const [saveIssues, setSaveIssues] = useState<LintIssue[]>([]);
-  // カテゴリーごとの _schema.json キャッシュ (null = スキーマ無し)
+  // Per-category _schema.json cache (null = no schema)
   const [categorySchema, setCategorySchema] = useState<JsonSchema | null>(null);
   const [schemaCategory, setSchemaCategory] = useState<string | null>(null);
 
@@ -60,7 +60,7 @@ export function SpecPage({ category, slug, specId }: Props) {
       if (!silent) {
         setDetail(null);
         setLoadError(null);
-        // スペックが変わったら保存 issues もクリア
+        // Clear save issues when the spec changes
         setSaveIssues([]);
       }
       try {
@@ -74,29 +74,29 @@ export function SpecPage({ category, slug, specId }: Props) {
             ? err.message
             : err instanceof Error
               ? err.message
-              : '読み込みに失敗しました。';
+              : 'Failed to load.';
         setLoadError(msg);
       }
     },
     [category, slug],
   );
 
-  // ルート変更で再読み込み
+  // Reload when the route changes
   useEffect(() => {
     void load();
   }, [load]);
 
-  // 外部 fs 変更の監視
+  // Watch for external filesystem changes
   useEffect(() => {
     const unsub = onFsEvent((e: FsEvent) => {
       if (e.specId !== specId) return;
       if (e.event === 'unlink') {
-        // 削除された場合は警告のみ
+        // File was deleted — show warning only
         setExternalChange(true);
         return;
       }
       if (!dirtyRef.current) {
-        // 未編集なら静かに再取得
+        // Silently reload when there are no unsaved changes
         void load(true);
       } else {
         setExternalChange(true);
@@ -112,18 +112,18 @@ export function SpecPage({ category, slug, specId }: Props) {
       const res = await saveSpec(category, slug, text);
       setDetail({ meta: res.meta, content: text });
       setExternalChange(false);
-      show('保存しました');
-      // 保存 issues を更新 (0 件ならクリア)
+      show('Saved');
+      // Update save issues (clear if none)
       setSaveIssues(res.issues ?? []);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '保存に失敗しました。';
+      const msg = err instanceof Error ? err.message : 'Failed to save.';
       show(msg);
     } finally {
       setSaving(false);
     }
   }, [detail, saving, category, slug, text, show]);
 
-  // Ctrl+S 保存 (編集モードのみ・テキスト/フォーム両タブで有効)
+  // Ctrl+S save (edit mode only; works on both text and form tabs)
   useEffect(() => {
     if (!editing) return;
     const onKey = (e: KeyboardEvent) => {
@@ -136,7 +136,7 @@ export function SpecPage({ category, slug, specId }: Props) {
     return () => window.removeEventListener('keydown', onKey);
   }, [editing, doSave]);
 
-  // カテゴリーの _schema.json を一度だけ取得してキャッシュする
+  // Fetch and cache the category's _schema.json once
   useEffect(() => {
     if (!editing || editTab !== 'form') return;
     if (schemaCategory === category) return;
@@ -151,7 +151,7 @@ export function SpecPage({ category, slug, specId }: Props) {
         setSchemaCategory(category);
       } catch {
         if (cancelled) return;
-        // 取得失敗時は推論スキーマにフォールバックする
+        // Fall back to inferred schema on fetch failure
         setCategorySchema(null);
         setSchemaCategory(category);
       }
@@ -172,14 +172,14 @@ export function SpecPage({ category, slug, specId }: Props) {
     return (
       <article className="sb-content">
         <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">読み込みエラー</div>
+          <div className="sb-error-panel__title">Load Error</div>
           <div className="sb-error-panel__message">{loadError}</div>
         </div>
       </article>
     );
   }
 
-  if (!detail) return <div className="sb-loading">読み込み中…</div>;
+  if (!detail) return <div className="sb-loading">Loading…</div>;
 
   const previewContent = editing ? debouncedText : detail.content;
   const issues = issuesBySpecId[specId] ?? [];
@@ -189,7 +189,7 @@ export function SpecPage({ category, slug, specId }: Props) {
       <header className="sb-page-bar">
         <div className="sb-page-bar__main">
           <h1 className="sb-page-bar__title">
-            {dirty && <span className="sb-dirty" title="未保存の変更">●</span>}
+            {dirty && <span className="sb-dirty" title="Unsaved changes">●</span>}
             {detail.meta.title}
           </h1>
           <span className="sb-id-badge">{detail.meta.id}</span>
@@ -201,14 +201,14 @@ export function SpecPage({ category, slug, specId }: Props) {
               onClick={() => void doSave()}
               disabled={saving || !dirty}
             >
-              {saving ? '保存中…' : '保存'}
+              {saving ? 'Saving…' : 'Save'}
             </button>
           )}
           <button
             className="sb-btn"
             onClick={() => setEditing(!editing)}
           >
-            {editing ? '表示' : '編集'}
+            {editing ? 'View' : 'Edit'}
           </button>
         </div>
       </header>
@@ -216,7 +216,7 @@ export function SpecPage({ category, slug, specId }: Props) {
       {issues.length > 0 && (
         <div className="sb-validation-banner" role="alert">
           <strong className="sb-validation-banner__title">
-            スキーマ違反 ({issues.length}件)
+            Schema violations ({issues.length})
           </strong>
           <ul className="sb-validation-banner__list">
             {issues.map((issue, i) => (
@@ -232,11 +232,11 @@ export function SpecPage({ category, slug, specId }: Props) {
         <div className="sb-validation-banner sb-save-issues-banner" role="alert">
           <div className="sb-save-issues-banner__head">
             <strong className="sb-validation-banner__title">
-              保存時の検証で {saveIssues.length} 件の問題
+              {saveIssues.length} issue{saveIssues.length !== 1 ? 's' : ''} found on save
             </strong>
             <button
               className="sb-icon-btn"
-              aria-label="閉じる"
+              aria-label="Close"
               onClick={() => setSaveIssues([])}
             >
               ✕
@@ -246,7 +246,7 @@ export function SpecPage({ category, slug, specId }: Props) {
             {saveIssues.map((issue, i) => (
               <li key={`${issue.rule}:${i}`}>
                 <code>[{issue.rule}]</code> {issue.message}
-                {issue.line != null && ` (行 ${issue.line})`}
+                {issue.line != null && ` (line ${issue.line})`}
               </li>
             ))}
           </ul>
@@ -255,9 +255,9 @@ export function SpecPage({ category, slug, specId }: Props) {
 
       {externalChange && (
         <div className="sb-banner" role="status">
-          このファイルは外部で変更されました。保存すると上書きします。
+          This file was changed externally. Saving will overwrite those changes.
           <button className="sb-link-btn" onClick={() => void load()}>
-            再読み込み
+            Reload
           </button>
         </div>
       )}
@@ -265,7 +265,7 @@ export function SpecPage({ category, slug, specId }: Props) {
       {editing ? (
         <div className="sb-split">
           <div className="sb-split__editor">
-            <div className="sb-edit-tabs" role="tablist" aria-label="編集モード">
+            <div className="sb-edit-tabs" role="tablist" aria-label="Edit mode">
               <button
                 type="button"
                 role="tab"
@@ -273,7 +273,7 @@ export function SpecPage({ category, slug, specId }: Props) {
                 className={`sb-edit-tab${editTab === 'text' ? ' sb-edit-tab--active' : ''}`}
                 onClick={() => setEditTab('text')}
               >
-                テキスト
+                Text
               </button>
               <button
                 type="button"
@@ -282,7 +282,7 @@ export function SpecPage({ category, slug, specId }: Props) {
                 className={`sb-edit-tab${editTab === 'form' ? ' sb-edit-tab--active' : ''}`}
                 onClick={() => setEditTab('form')}
               >
-                フォーム
+                Form
               </button>
             </div>
             <div className="sb-edit-pane">
@@ -323,11 +323,11 @@ export function SpecPage({ category, slug, specId }: Props) {
 }
 
 /**
- * フォームタブの中身。現在のテキストから front-matter を parse し、
- * - 解析エラー → エラーボックスを表示
- * - 成功 → SchemaForm を描画 (schema = カテゴリースキーマ ?? 推論)
- * フォーム変更は replaceFrontMatter でテキストへ書き戻し、同じ text state を更新する
- * (dirty / Ctrl+S / ライブプレビューは既存フローのまま動く)。
+ * Form tab content. Parses front-matter from the current text and either:
+ * - Shows an error box on parse failure
+ * - Renders SchemaForm (schema = category schema ?? inferred)
+ * Form changes are written back via replaceFrontMatter, updating the same text state
+ * (dirty / Ctrl+S / live preview all continue to work as before).
  */
 function FormPane({
   text,
@@ -344,10 +344,10 @@ function FormPane({
     return (
       <div className="sb-form-pane">
         <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">フォームを表示できません</div>
+          <div className="sb-error-panel__title">Cannot display form</div>
           <div className="sb-error-panel__message">
-            front-matter の YAML を解析できません: {parts.error}。
-            テキストタブで修正してください。
+            Failed to parse front-matter YAML: {parts.error}.
+            Please fix it in the Text tab.
           </div>
         </div>
       </div>

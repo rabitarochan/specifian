@@ -1,9 +1,9 @@
 /**
- * `/specs/*` splat ルートのディスパッチャー。
- * splat の末尾セグメントを slug 候補とし:
- *  1. GET /api/specs/<splat> が成功 → SpecPage
- *  2. 404 → カテゴリーとみなし CategoryIndexPage (<splat> 全体がカテゴリーパス)
- * specs から ID 一致を先に確認し、無駄なリクエストを避けつつ確実に判定する。
+ * Dispatcher for the `/specs/*` splat route.
+ * Treats the last segment of the splat as a slug candidate:
+ *  1. GET /api/specs/<splat> succeeds → SpecPage
+ *  2. 404 → treat as category, CategoryIndexPage (<splat> = full category path)
+ * Checks specs list for an ID match first to avoid unnecessary requests.
  */
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
@@ -42,13 +42,13 @@ export function SpecsRoute() {
     const { category, slug } = splitSplat(splat);
     const candidateId = `${category}:${slug}`;
 
-    // specs に一致があれば即スペック確定
+    // Immediately resolve as a spec if the ID matches the local cache
     if (specs.some((s) => s.id === candidateId)) {
       setResolved({ kind: 'spec', category, slug, specId: candidateId });
       return;
     }
 
-    // 実フェッチで判定 (specs キャッシュが古い場合に備える)
+    // Fetch to confirm (in case the specs cache is stale)
     fetchSpecByPath(splat)
       .then((d) => {
         if (!active) return;
@@ -62,10 +62,10 @@ export function SpecsRoute() {
       .catch((err: unknown) => {
         if (!active) return;
         if (err instanceof ApiHttpError && err.status === 404) {
-          // カテゴリーとして扱う
+          // Treat as a category
           setResolved({ kind: 'category', category: splat });
         } else {
-          // その他のエラーでもカテゴリー表示でフォールバック
+          // Fall back to category view on other errors too
           setResolved({ kind: 'category', category: splat });
         }
       });
@@ -76,7 +76,7 @@ export function SpecsRoute() {
   }, [splat, specs]);
 
   if (resolved.kind === 'loading') {
-    return <div className="sb-loading">読み込み中…</div>;
+    return <div className="sb-loading">Loading…</div>;
   }
   if (resolved.kind === 'spec') {
     return (

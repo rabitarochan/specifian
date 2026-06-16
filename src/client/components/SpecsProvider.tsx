@@ -1,6 +1,6 @@
 /**
- * 全 SpecMeta を保持し、WebSocket の fs イベントで再取得する共有ストア。
- * サイドバーや各ページが specs / refetch を参照する。
+ * Shared store that holds all SpecMeta and re-fetches on WebSocket fs events.
+ * The sidebar and individual pages reference specs / refetch from here.
  */
 import {
   createContext,
@@ -19,7 +19,7 @@ interface SpecsContextValue {
   specs: SpecMeta[];
   loading: boolean;
   refetch: () => Promise<void>;
-  /** 現在の fs イベントリスナー登録 (ページが現在のスペック変更を検知するため) */
+  /** Register a fs event listener (so pages can detect changes to the current spec). */
   onFsEvent: (listener: (e: FsEvent) => void) => () => void;
 }
 
@@ -41,7 +41,7 @@ export function SpecsProvider({ children }: { children: ReactNode }) {
       const next = await fetchSpecs();
       setSpecs(next);
     } catch {
-      // 取得失敗時は前回値を保持
+      // On fetch failure, keep the previous value
     } finally {
       setLoading(false);
     }
@@ -53,9 +53,9 @@ export function SpecsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsub = subscribeFsEvents((e) => {
-      // どの fs イベントでもツリーを再取得する
+      // Re-fetch the tree on any fs event
       void refetch();
-      // ページ側リスナーへも配信
+      // Also dispatch to page-level listeners
       for (const l of listeners.current) l(e);
     });
     return unsub;

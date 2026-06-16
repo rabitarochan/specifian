@@ -1,59 +1,59 @@
 /**
- * specifian 共有型定義 — API 契約の正。
- * サーバー (src/server) とクライアント (src/client) の両方から import する。
- * 変更する場合は docs/DESIGN.md と両実装の整合を保つこと。
+ * specifian shared type definitions — the source of truth for the API contract.
+ * Imported by both the server (src/server) and the client (src/client).
+ * When changing these, keep docs/DESIGN.md and both implementations in sync.
  */
 
-/** specs ディレクトリー内の 1 ファイル (.mdx) のメタ情報 */
+/** Metadata for a single file (.mdx) inside the specs directory */
 export interface SpecMeta {
-  /** "tables:users", "api/v1:users", インデックスは "tables:_" */
+  /** "tables:users", "api/v1:users"; index is "tables:_" */
   id: string;
-  /** "tables", "api/v1" — 常に "/" 区切り */
+  /** "tables", "api/v1" — always "/"-separated */
   category: string;
-  /** ファイル名 (拡張子なし)。インデックスは "_" */
+  /** File name (without extension). Index is "_" */
   slug: string;
-  /** specsDir 相対パス "tables/users.mdx" — 常に "/" 区切り */
+  /** specsDir-relative path "tables/users.mdx" — always "/"-separated */
   path: string;
   /** frontmatter.title ?? slug */
   title: string;
   description?: string;
-  /** front-matter 全体 */
+  /** The entire front-matter */
   data: Record<string, unknown>;
-  /** 本文中の wiki リンク先 ID ("tables:users" 形式)。重複排除済み */
+  /** Wiki link target IDs found in the body ("tables:users" form). Deduplicated */
   links: string[];
   /** slug === "_" */
   isIndex: boolean;
 }
 
-/** GET /api/specs/<category>/<slug> のレスポンス */
+/** Response for GET /api/specs/<category>/<slug> */
 export interface SpecDetail {
   meta: SpecMeta;
-  /** front-matter を含む生の MDX テキスト */
+  /** Raw MDX text including the front-matter */
   content: string;
 }
 
-/** PUT /api/specs/... のリクエストボディ */
+/** Request body for PUT /api/specs/... */
 export interface SaveSpecRequest {
   content: string;
 }
 
-/** POST /api/specs のリクエストボディ */
+/** Request body for POST /api/specs */
 export interface CreateSpecRequest {
   category: string;
   slug: string;
   title?: string;
 }
 
-/** POST /api/categories のリクエストボディ */
+/** Request body for POST /api/categories */
 export interface CreateCategoryRequest {
-  /** "tables", "api/v1" のような specsDir 相対パス */
+  /** specsDir-relative path such as "tables", "api/v1" */
   path: string;
 }
 
-/** GET /api/data のレスポンス: data[category][slug] = front-matter */
+/** Response for GET /api/data: data[category][slug] = front-matter */
 export type AllData = Record<string, Record<string, Record<string, unknown>>>;
 
-/** GET /api/graph のレスポンス */
+/** Response for GET /api/graph */
 export interface Graph {
   nodes: GraphNode[];
   edges: GraphEdge[];
@@ -64,7 +64,7 @@ export interface GraphNode {
   id: string;
   title: string;
   category: string;
-  /** リンク先が存在しない場合 true (プレースホルダーノード) */
+  /** true when the link target does not exist (placeholder node) */
   missing?: boolean;
 }
 
@@ -75,13 +75,13 @@ export interface GraphEdge {
   target: string;
 }
 
-/** POST /api/generate のリクエストボディ */
+/** Request body for POST /api/generate */
 export interface GenerateRequest {
   /** specs/_generators/<generator>.md */
   generator: string;
-  /** 対象スペック ID。省略時は全スペック */
+  /** Target spec ID. When omitted, all specs */
   specId?: string;
-  /** 出力先ディレクトリー (サーバーの cwd 相対)。省略時は書き込まずレスポンスのみ */
+  /** Output directory (relative to the server cwd). When omitted, nothing is written and only the response is returned */
   out?: string;
 }
 
@@ -94,117 +94,117 @@ export interface GenerateResponse {
   files: GeneratedFile[];
 }
 
-/** WebSocket (/ws) ブロードキャストメッセージ */
+/** WebSocket (/ws) broadcast message */
 export interface FsEvent {
   type: 'fs';
   event: 'add' | 'change' | 'unlink';
-  /** 変更されたファイルの SpecMeta.id (mdx 以外や _generators の場合は null) */
+  /** SpecMeta.id of the changed file (null for non-mdx files or _generators) */
   specId: string | null;
-  /** specsDir 相対パス ("/" 区切り) */
+  /** specsDir-relative path ("/"-separated) */
   path: string;
 }
 
-/** API エラーレスポンス */
+/** API error response */
 export interface ApiError {
   error: string;
 }
 
-/** GET /api/search?q=&limit= の 1 件 */
+/** A single result for GET /api/search?q=&limit= */
 export interface SearchResult {
   id: string;
   title: string;
   category: string;
   slug: string;
-  /** マッチ箇所の抜粋 (前後の文脈を含む) */
+  /** Excerpt around the match (includes surrounding context) */
   snippet: string;
-  /** マッチしたフィールド (スコア順: title > description > data > body) */
+  /** The field that matched (by score: title > description > data > body) */
   field: 'title' | 'description' | 'data' | 'body';
 }
 
-/** スキーマ違反 1 件 */
+/** A single schema violation */
 export interface ValidationIssue {
   specId: string;
-  /** データパス (例: "/table/columns/0/type") */
+  /** Data path (e.g. "/table/columns/0/type") */
   path: string;
   message: string;
 }
 
-/** GET /api/validation のレスポンス。_schema.json を持つカテゴリーのみ対象 */
+/** Response for GET /api/validation. Covers only categories that have a _schema.json */
 export interface ValidationReport {
   issues: ValidationIssue[];
 }
 
-/** GET /api/components の 1 件 (specs/_components/ 配下のユーザー定義コンポーネント) */
+/** A single result for GET /api/components (user-defined components under specs/_components/) */
 export interface UserComponentFile {
-  /** specsDir 相対パス "_components/StatusBadge.tsx" */
+  /** specsDir-relative path "_components/StatusBadge.tsx" */
   path: string;
   source: string;
 }
 
-/** GET /api/drawings の 1 件 (specs 配下の Excalidraw 図) */
+/** A single result for GET /api/drawings (Excalidraw drawings under specs) */
 export interface DrawingMeta {
-  /** specsDir 相対パス "screens/login.excalidraw" ("/" 区切り) */
+  /** specsDir-relative path "screens/login.excalidraw" ("/"-separated) */
   path: string;
 }
 
-/** POST /api/lint のリクエスト (保存せずに検証する) */
+/** Request for POST /api/lint (validates without saving) */
 export interface LintRequest {
-  /** front-matter 込みの MDX 全文 */
+  /** Full MDX text including front-matter */
   content: string;
-  /** スキーマ検証に使うカテゴリー (省略時はスキーマ検証をスキップ) */
+  /** Category used for schema validation (when omitted, schema validation is skipped) */
   category?: string;
   slug?: string;
 }
 
-/** lint / 保存時検証の 1 件 */
+/** A single lint / save-time validation result */
 export interface LintIssue {
   severity: 'error' | 'warning';
   rule: 'mdx' | 'yaml' | 'wikilink' | 'schema';
   message: string;
-  /** 1 始まり (分かる場合のみ) */
+  /** 1-based (only when known) */
   line?: number;
   column?: number;
 }
 
-/** POST /api/lint のレスポンス */
+/** Response for POST /api/lint */
 export interface LintResponse {
   issues: LintIssue[];
 }
 
-/** PUT /api/specs/... のレスポンス (保存は常に実行され、issues は情報提供) */
+/** Response for PUT /api/specs/... (the save always runs; issues are informational) */
 export interface SaveSpecResponse {
   meta: SpecMeta;
   issues: LintIssue[];
 }
 
-/** POST /api/rename のリクエスト (from/to はスペック ID "category:slug") */
+/** Request for POST /api/rename (from/to are spec IDs "category:slug") */
 export interface RenameSpecRequest {
   from: string;
   to: string;
 }
 
-/** POST /api/rename のレスポンス */
+/** Response for POST /api/rename */
 export interface RenameSpecResponse {
   meta: SpecMeta;
-  /** wiki リンクを書き換えたスペック ID 一覧 */
+  /** IDs of specs whose wiki links were rewritten */
   rewrittenFiles: string[];
 }
 
-/** GET /api/refs?id=<specId> のレスポンス */
+/** Response for GET /api/refs?id=<specId> */
 export interface RefsResponse {
-  /** id を wiki リンクで参照しているスペック ID 一覧 */
+  /** IDs of specs that reference id via a wiki link */
   refs: string[];
 }
 
-/** GET /api/schema/<category> のレスポンス。_schema.json が無いカテゴリーは schema: null */
+/** Response for GET /api/schema/<category>. Categories without a _schema.json get schema: null */
 export interface CategorySchemaResponse {
   schema: Record<string, unknown> | null;
 }
 
-/** wiki リンク抽出用正規表現 (コードフェンス/インラインコード内の除外は呼び出し側で行う) */
+/** Regex for extracting wiki links (excluding code fences/inline code is done by the caller) */
 export const WIKILINK_PATTERN = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/g;
 
-/** id "tables:users" -> { category: "tables", slug: "users" }。不正な形式は null */
+/** id "tables:users" -> { category: "tables", slug: "users" }. Returns null for invalid forms */
 export function parseSpecId(id: string): { category: string; slug: string } | null {
   const idx = id.lastIndexOf(':');
   if (idx <= 0 || idx === id.length - 1) return null;
@@ -216,7 +216,7 @@ export function toSpecId(category: string, slug: string): string {
   return `${category}:${slug}`;
 }
 
-/** id -> クライアントルート "/specs/tables/users" */
+/** id -> client route "/specs/tables/users" */
 export function specRoute(id: string): string {
   const parsed = parseSpecId(id);
   if (!parsed) return '/';

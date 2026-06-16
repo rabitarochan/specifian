@@ -1,7 +1,7 @@
 /**
- * wiki リンクのコンポーネント版。
- * to は スペック ID ("tables:users")。
- * リンク先が specs に存在しなければ broken-link スタイルを適用する (遷移は可能)。
+ * Component version of a wiki link.
+ * `to` is a spec ID ("tables:users").
+ * Applies broken-link style if the target spec doesn't exist in specs (navigation still works).
  */
 import type { MouseEvent, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
@@ -13,8 +13,8 @@ export function SpecLink({ to, children }: { to: string; children?: ReactNode })
   const exists = specs.some((s) => s.id === to);
   const label = children ?? to;
 
-  // onWikiNavigate がある文脈 (グラフプレビューなど) では通常遷移を抑制して委譲する。
-  // 修飾キー付き / 中クリックはブラウザー既定 (新規タブ等) を尊重する。
+  // In contexts where onWikiNavigate is set (e.g. graph preview), suppress normal navigation and delegate.
+  // Modified clicks / middle-click respect the browser default (new tab, etc.).
   const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
     if (!onWikiNavigate) return;
     if (e.defaultPrevented) return;
@@ -28,7 +28,7 @@ export function SpecLink({ to, children }: { to: string; children?: ReactNode })
       to={specRoute(to)}
       onClick={handleClick}
       className={exists ? 'sb-wikilink' : 'sb-wikilink sb-wikilink--broken'}
-      title={exists ? undefined : `未解決のリンク: ${to}`}
+      title={exists ? undefined : `Unresolved link: ${to}`}
     >
       {label}
     </Link>

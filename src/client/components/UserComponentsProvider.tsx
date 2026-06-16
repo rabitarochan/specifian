@@ -1,8 +1,8 @@
 /**
- * ユーザー定義コンポーネント (specs/_components/) をアプリ起動時に 1 度ロードし、
- * 全 MDX 描画へ供給する共有プロバイダー。
- * ws の FsEvent で path が "_components/" 始まりのものが来たら、
- * コンパイルキャッシュを破棄して再ロードする → 再描画でユーザーコンポーネントが更新される。
+ * Shared provider that loads user-defined components (specs/_components/) once on app start
+ * and supplies them to all MDX renders.
+ * When an FsEvent with a path starting with "_components/" arrives via WebSocket,
+ * the compile cache is invalidated and components are reloaded → re-renders pick up the changes.
  */
 import {
   createContext,
@@ -23,9 +23,9 @@ import { useSpecs } from './SpecsProvider';
 interface UserComponentsContextValue {
   components: Record<string, ComponentType<unknown>>;
   errors: { path: string; message: string }[];
-  /** 初回ロード (成否問わず) が完了したか。MDX 描画はこれを待つ */
+  /** Whether the initial load (success or failure) has completed. MDX rendering waits for this. */
   ready: boolean;
-  /** 再ロードのたびに増える。ErrorBoundary のリセットキーに使う */
+  /** Increments on every reload. Used as the ErrorBoundary reset key. */
   version: number;
 }
 
@@ -54,19 +54,19 @@ export function UserComponentsProvider({ children }: { children: ReactNode }) {
       const next = await loadUserComponents();
       setResult(next);
     } catch {
-      // 取得失敗時は前回値を保持 (アプリは落とさない)
+      // On fetch failure, keep the previous value (don't crash the app)
     } finally {
       setReady(true);
       setVersion((v) => v + 1);
     }
   }, []);
 
-  // 初回ロード
+  // Initial load
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  // _components/ 配下の変更でキャッシュ破棄 → 再ロード
+  // Changes under _components/ → invalidate cache and reload
   useEffect(() => {
     const unsub = onFsEvent((e) => {
       if (e.path.startsWith('_components/')) {

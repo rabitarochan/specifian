@@ -1,24 +1,23 @@
 /**
- * スキーマ駆動の再帰フォームレンダラー。
+ * Schema-driven recursive form renderer.
  *
- * <SchemaForm schema value onChange /> — value は front-matter データ
- * (Record<string, unknown>)。すべての変更は新しいオブジェクトツリーを生成する
- * (非破壊)。
+ * <SchemaForm schema value onChange /> — value is front-matter data
+ * (Record<string, unknown>). All changes produce a new object tree (immutable).
  *
- * 描画ルール:
- *   string                → text input (enum なら select)
+ * Rendering rules:
+ *   string                → text input (select if enum)
  *   number / integer      → number input
  *   boolean               → checkbox
- *   object                → ネスト fieldset (再帰)
- *   array<all-scalar obj>  → 編集テーブル (ObjectArrayTable)
- *   array<nested obj>      → fieldset のリスト (追加/削除/並べ替え)
- *   array<scalar>          → 入力行リスト (追加/削除)
- *   不明                   → 読み取り専用 JSON フォールバック (値は保持)
+ *   object                → nested fieldset (recursive)
+ *   array<all-scalar obj>  → editable table (ObjectArrayTable)
+ *   array<nested obj>      → list of fieldsets (add/delete/reorder)
+ *   array<scalar>          → list of input rows (add/delete)
+ *   unknown                → read-only JSON fallback (value preserved)
  *
- * 未設定の任意フィールドはコントロールを空表示し、入力があるまでキーを追加しない。
- * スカラーを空に戻すとキーを削除する (boolean の false は保持)。
- * schema.properties に無い既存キーは末尾の「スキーマ外のフィールド」として
- * inferSchema で描画し、ラウンドトリップで失われないようにする。
+ * Optional fields with no value render empty controls and don't add a key until typed.
+ * Clearing a scalar removes the key (false is retained for boolean).
+ * Keys not in schema.properties are rendered at the bottom as "Extra fields" via
+ * inferSchema so they survive round-trips.
  */
 import type { JsonSchema } from './schemaTypes';
 import { primaryType } from './schemaTypes';
@@ -45,7 +44,7 @@ interface SchemaFormProps {
   onChange: (next: Record<string, unknown>) => void;
 }
 
-/** トップレベル: object として展開する */
+/** Top-level: expand as an object */
 export function SchemaForm({ schema, value, onChange }: SchemaFormProps) {
   return (
     <div className="sb-schema-form">
@@ -54,7 +53,7 @@ export function SchemaForm({ schema, value, onChange }: SchemaFormProps) {
   );
 }
 
-/** object の各プロパティ + スキーマ外キーを描画する */
+/** Render each property of an object + any extra keys not in the schema */
 function ObjectFields({
   schema,
   value,
@@ -74,7 +73,7 @@ function ObjectFields({
     );
   };
 
-  // スキーマ外キーだけの推論スキーマ (description などは付かない)
+  // Inferred schema for extra keys only (no description etc.)
   const extraData: Record<string, unknown> = {};
   for (const k of outsideKeys) extraData[k] = value[k];
   const extraSchema = outsideKeys.length > 0 ? inferSchema(extraData) : null;
@@ -94,7 +93,7 @@ function ObjectFields({
 
       {extraSchema && (
         <div className="sb-schema-extra">
-          <div className="sb-schema-extra__divider">スキーマ外のフィールド</div>
+          <div className="sb-schema-extra__divider">Extra fields</div>
           {outsideKeys.map((key) => (
             <Field
               key={key}
@@ -111,7 +110,7 @@ function ObjectFields({
   );
 }
 
-/** 1 フィールド (ラベル + 型に応じたコントロール) を描画する */
+/** Render a single field (label + type-appropriate control) */
 function Field({
   fieldKey,
   schema,
@@ -128,7 +127,7 @@ function Field({
   const t = primaryType(schema);
   const label = fieldLabel(schema, fieldKey);
 
-  // object → ネスト fieldset
+  // object → nested fieldset
   if (t === 'object') {
     return (
       <fieldset className="sb-fieldset">
@@ -153,7 +152,7 @@ function Field({
     const items = itemsSchema(schema);
     const itemType = primaryType(items);
 
-    // array of all-scalar object → テーブル
+    // array of all-scalar object → table
     if (isAllScalarObject(items)) {
       return (
         <div className="sb-field">
@@ -170,7 +169,7 @@ function Field({
       );
     }
 
-    // array of scalar → 入力行リスト
+    // array of scalar → list of input rows
     if (isScalarType(itemType)) {
       return (
         <div className="sb-field">
@@ -187,7 +186,7 @@ function Field({
       );
     }
 
-    // array of nested object (またはそれ以外) → fieldset のリスト
+    // array of nested object (or unknown) → list of fieldsets
     return (
       <div className="sb-field">
         <FieldLabel label={label} required={required} />
@@ -203,7 +202,7 @@ function Field({
     );
   }
 
-  // scalar (string/number/integer/boolean、enum 含む)
+  // scalar (string/number/integer/boolean, including enum)
   if (isScalarType(t)) {
     if (t === 'boolean') {
       return (
@@ -244,21 +243,21 @@ function Field({
     );
   }
 
-  // 不明/未対応 → 読み取り専用 JSON フォールバック (値は保持)
+  // Unknown/unsupported → read-only JSON fallback (value preserved)
   return (
     <div className="sb-field">
       <FieldLabel label={label} required={required} />
-      <pre className="sb-json-fallback" aria-label={`${label} (読み取り専用)`}>
+      <pre className="sb-json-fallback" aria-label={`${label} (read-only)`}>
         {safeStringify(value)}
       </pre>
       <p className="sb-field__hint">
-        この型はフォームで編集できません。テキストタブで編集してください。
+        This type cannot be edited in the form. Use the Text tab to edit it.
       </p>
     </div>
   );
 }
 
-/** array of scalar の入力行リスト */
+/** List of input rows for an array of scalars */
 function ScalarArray({
   items,
   values,
@@ -270,7 +269,7 @@ function ScalarArray({
 }) {
   const updateAt = (index: number, next: unknown): void => {
     const out = values.slice();
-    // 空に戻しても配列要素は残す (空文字 / undefined を保持)
+    // Keep the array element even when cleared (retain empty string / undefined)
     out[index] = next;
     onChange(out);
   };
@@ -293,26 +292,26 @@ function ScalarArray({
             value={v}
             allowEmpty
             onChange={(next) => updateAt(i, next)}
-            ariaLabel={`${i + 1}番目`}
+            ariaLabel={`Item ${i + 1}`}
           />
           <button
             type="button"
             className="sb-row-btn sb-row-btn--danger"
-            aria-label="削除"
+            aria-label="Delete"
             onClick={() => removeAt(i)}
           >
-            削除
+            Delete
           </button>
         </div>
       ))}
       <button type="button" className="sb-link-btn" onClick={add}>
-        + 追加
+        + Add
       </button>
     </div>
   );
 }
 
-/** array of (nested) object → fieldset のリスト */
+/** List of fieldsets for an array of (nested) objects */
 function ObjectArrayList({
   items,
   values,
@@ -355,7 +354,7 @@ function ObjectArrayList({
               <button
                 type="button"
                 className="sb-row-btn"
-                aria-label="上へ移動"
+                aria-label="Move up"
                 disabled={i === 0}
                 onClick={() => move(i, -1)}
               >
@@ -364,7 +363,7 @@ function ObjectArrayList({
               <button
                 type="button"
                 className="sb-row-btn"
-                aria-label="下へ移動"
+                aria-label="Move down"
                 disabled={i === values.length - 1}
                 onClick={() => move(i, 1)}
               >
@@ -373,10 +372,10 @@ function ObjectArrayList({
               <button
                 type="button"
                 className="sb-row-btn sb-row-btn--danger"
-                aria-label="削除"
+                aria-label="Delete"
                 onClick={() => removeAt(i)}
               >
-                削除
+                Delete
               </button>
             </span>
           </legend>
@@ -388,7 +387,7 @@ function ObjectArrayList({
         </fieldset>
       ))}
       <button type="button" className="sb-link-btn" onClick={add}>
-        + 追加
+        + Add
       </button>
     </div>
   );
@@ -405,7 +404,7 @@ function FieldLabel({ label, required }: { label: string; required: boolean }) {
 
 function RequiredStar() {
   return (
-    <span className="sb-required" aria-label="必須">
+    <span className="sb-required" aria-label="Required">
       {' '}
       *
     </span>

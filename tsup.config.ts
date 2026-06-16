@@ -8,6 +8,6 @@ export default defineConfig({
   outDir: 'dist',
   clean: false,
   banner: { js: '#!/usr/bin/env node' },
-  // ESM bundle 内で require を使う CJS 依存対策
+  // Workaround for CJS dependencies that use require inside the ESM bundle
   shims: true,
 });

@@ -1,11 +1,11 @@
 /**
- * MDX 組み込みコンポーネント `<Drawing src="screens/login" />`。
- * - シーンを取得し Excalidraw の exportToSvg で静的 SVG 描画 (閲覧時はエディターを起動しない)
- * - ホバーで「編集」ボタン → DrawingEditorModal を開く
- * - ファイルが無い (404) 場合はプレースホルダー + 「図を作成」ボタン
- * - 外部 (VSCode 等) での変更も fs イベントで自動再描画
+ * MDX built-in component `<Drawing src="screens/login" />`.
+ * - Fetches the scene and renders a static SVG via Excalidraw's exportToSvg (no editor in view mode)
+ * - Hover shows an "Edit" button → opens DrawingEditorModal
+ * - Shows a placeholder + "Create drawing" button when the file doesn't exist (404)
+ * - Automatically re-renders when the file changes externally (e.g. via VSCode)
  *
- * Excalidraw 本体は描画 / 編集が必要になったときだけ動的にロードされる。
+ * The Excalidraw library is loaded dynamically only when rendering / editing is needed.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiHttpError, fetchDrawing } from '../../api';
@@ -15,7 +15,7 @@ import { DrawingEditorModal } from '../DrawingEditorModal';
 import { Warning } from './Warning';
 
 interface Props {
-  /** specsDir 相対・拡張子なしパス (例: "screens/login") */
+  /** Path relative to specsDir, without extension (e.g. "screens/login") */
   src?: string;
   title?: string;
 }
@@ -23,12 +23,12 @@ interface Props {
 type Status = 'loading' | 'ready' | 'missing' | 'error';
 
 export function Drawing({ src, title }: Props) {
-  // MDX はユーザー入力: src 欠落 / 空はやさしい警告ボックスにする
+  // MDX is user input: missing / empty src shows a friendly warning box
   const trimmed = src?.trim();
   if (!trimmed) {
     return (
       <Warning title="Drawing">
-        図のパスが指定されていません (<code>src</code> が必要です)。
+        No drawing path specified (<code>src</code> is required).
       </Warning>
     );
   }
@@ -41,13 +41,13 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
-  // 編集モーダルに渡す取得済みシーン (404 のときは null)
+  // Pre-fetched scene to pass to the editor modal (null on 404)
   const sceneRef = useRef<unknown | null>(null);
-  // 取得世代カウンター。最新の load 呼び出しだけが状態を書き込めるようにする
-  // (重複した fs イベント再取得やアンマウント後の stale な書き込みを防ぐ)。
+  // Generation counter. Only the latest load call may write state
+  // (prevents stale writes from duplicate fs-event re-fetches or after unmount).
   const genRef = useRef(0);
 
-  // シーンを取得して SVG を描画する。stale な結果は破棄する。
+  // Fetch the scene and render to SVG. Discard stale results.
   const load = useCallback(async () => {
     const gen = ++genRef.current;
     const fresh = () => gen === genRef.current;
@@ -84,7 +84,7 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
     }
   }, [src]);
 
-  // 初回 + src 変更時に取得。アンマウント時は世代を進めて結果を破棄する。
+  // Fetch on mount and when src changes. Advance generation on unmount to discard results.
   useEffect(() => {
     void load();
     return () => {
@@ -92,7 +92,7 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
     };
   }, [load]);
 
-  // fs イベントで自身の .excalidraw が変わったら再取得
+  // Re-fetch when this file's .excalidraw changes via fs event
   useEffect(() => {
     const target = `${src}.excalidraw`;
     return onFsEvent((e) => {
@@ -108,10 +108,10 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
         <div className="sb-drawing sb-drawing--missing">
           <div className="sb-drawing__placeholder">
             <div className="sb-drawing__placeholder-text">
-              図がまだありません: <code>{src}</code>
+              No drawing yet: <code>{src}</code>
             </div>
             <button className="sb-btn sb-btn--primary" onClick={openEditor}>
-              図を作成
+              Create drawing
             </button>
           </div>
         </div>
@@ -130,7 +130,7 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
   if (status === 'error') {
     return (
       <div className="sb-mermaid-error" role="alert">
-        <div className="sb-mermaid-error__title">図の描画エラー: {src}</div>
+        <div className="sb-mermaid-error__title">Drawing render error: {src}</div>
         <pre>{error}</pre>
       </div>
     );
@@ -140,16 +140,16 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
     <>
       <div className="sb-drawing" title={title}>
         {status === 'loading' && (
-          <div className="sb-drawing__loading">図を読み込み中…</div>
+          <div className="sb-drawing__loading">Loading drawing…</div>
         )}
         <div className="sb-drawing__canvas" ref={containerRef} />
         {status === 'ready' && (
           <button
             className="sb-drawing__edit"
             onClick={openEditor}
-            aria-label="図を編集"
+            aria-label="Edit drawing"
           >
-            編集
+            Edit
           </button>
         )}
       </div>

@@ -4,22 +4,22 @@ import Ajv from 'ajv';
 import { loadSpecs } from './store.js';
 import type { ValidationIssue, ValidationReport } from '../shared/types.js';
 
-/** loadCategorySchema の戻り値 */
+/** Return value of loadCategorySchema. */
 export interface CategorySchemaResult {
-  /** パースに成功したスキーマオブジェクト。_schema.json が存在しない場合は null */
+  /** Parsed schema object on success; null when _schema.json does not exist. */
   schema: Record<string, unknown> | null;
   /**
-   * ファイルの読み込みまたは JSON パースに失敗した場合のエラーメッセージ。
-   * schema が null かつ error が undefined の場合は ENOENT (ファイルなし) を意味する。
+   * Error message when the file cannot be read or JSON parsing fails.
+   * When schema is null and error is undefined it means ENOENT (file absent).
    */
   error?: string;
 }
 
 /**
- * specsDir/<category>/_schema.json を読み込んで返す共有ヘルパー。
- * - category が '' のときは specsDir 直下の _schema.json を参照する。
- * - ファイルが存在しない (ENOENT) → { schema: null }
- * - 読み込み失敗または JSON パース失敗 → { schema: null, error: <メッセージ> }
+ * Shared helper that reads specsDir/<category>/_schema.json.
+ * - When category is '' it reads _schema.json directly under specsDir.
+ * - File absent (ENOENT) → { schema: null }
+ * - Read or JSON parse failure → { schema: null, error: <message> }
  */
 export async function loadCategorySchema(
   specsDir: string,
@@ -38,7 +38,7 @@ export async function loadCategorySchema(
     }
     return {
       schema: null,
-      error: `_schema.json を読み込めませんでした: ${String(err)}`,
+      error: `Failed to read _schema.json: ${String(err)}`,
     };
   }
 
@@ -48,14 +48,14 @@ export async function loadCategorySchema(
   } catch (err) {
     return {
       schema: null,
-      error: `_schema.json の JSON パースに失敗しました: ${String(err)}`,
+      error: `Failed to parse _schema.json as JSON: ${String(err)}`,
     };
   }
 
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
     return {
       schema: null,
-      error: '_schema.json はオブジェクトである必要があります',
+      error: '_schema.json must be a JSON object',
     };
   }
 
@@ -122,7 +122,7 @@ export async function validateSpecs(specsDir: string): Promise<ValidationReport>
       issues.push({
         specId: schemaSpecId,
         path: '/',
-        message: `_schema.json のスキーマコンパイルに失敗しました: ${String(err)}`,
+        message: `Failed to compile _schema.json as a schema: ${String(err)}`,
       });
       compiledSchemas.set(category, null);
     }
@@ -144,18 +144,18 @@ export async function validateSpecs(specsDir: string): Promise<ValidationReport>
         const instancePath = err.instancePath || '/';
 
         // Build a helpful message
-        let message = err.message ?? 'バリデーションエラー';
+        let message = err.message ?? 'Validation error';
 
         // Enhance with params context for common keywords
         if (err.keyword === 'required' && err.params && 'missingProperty' in err.params) {
-          message = `必須プロパティがありません: '${String(err.params['missingProperty'])}'`;
+          message = `Missing required property: '${String(err.params['missingProperty'])}'`;
         } else if (err.keyword === 'additionalProperties' && err.params && 'additionalProperty' in err.params) {
-          message = `許可されていないプロパティ: '${String(err.params['additionalProperty'])}'`;
+          message = `Additional property not allowed: '${String(err.params['additionalProperty'])}'`;
         } else if (err.keyword === 'enum' && err.params && 'allowedValues' in err.params) {
           const allowed = (err.params['allowedValues'] as unknown[]).join(', ');
-          message = `${err.message ?? 'enum エラー'} (許可値: ${allowed})`;
+          message = `${err.message ?? 'Enum error'} (allowed values: ${allowed})`;
         } else if (err.keyword === 'type' && err.params && 'type' in err.params) {
-          message = `型が正しくありません: ${String(err.params['type'])} が必要です`;
+          message = `Incorrect type: expected ${String(err.params['type'])}`;
         }
 
         issues.push({
