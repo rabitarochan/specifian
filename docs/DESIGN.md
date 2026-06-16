@@ -40,7 +40,7 @@ specifian/
       watcher.ts           # chokidar -> ws broadcast
       routes/              # API routes
       generate.ts          # code generation via scaffdog engine
-      init.ts              # specifian init (copies examples/specs)
+      init.ts              # specifian init (copies examples/.specs)
     client/                # React app (owned by: client agent)
       index.html
       main.tsx / App.tsx
@@ -50,7 +50,7 @@ specifian/
       components/          # built-in components (TableDefinition, SpecList, ...)
       pages/               # Home / SpecPage / GraphPage
       styles/
-  examples/specs/          # sample content (owned by: content agent; serves as both init template and dev fixture)
+  examples/.specs/         # sample content (owned by: content agent; serves as both init template and dev fixture)
   README.md
 ```
 
@@ -144,7 +144,7 @@ UI is in English. Clean, modern color scheme (light theme, single accent color),
 
 ```
 specifian [serve] [--dir <specsDir>=./.specs] [--port <port>=4400] [--open]
-specifian init [--dir ./.specs]          # copies bundled examples/specs to create a scaffold
+specifian init [--dir ./.specs]          # copies bundled examples/.specs to create a scaffold
 specifian generate <generator> [--dir ./.specs] [--spec <id>] [--out <dir>=.]
 ```
 
@@ -152,9 +152,9 @@ specifian generate <generator> [--dir ./.specs] [--spec <id>] [--out <dir>=.]
 
 ## Dev Scripts
 
-- `npm run dev` — starts the server (tsx watch, port 4399, examples/specs) and Vite dev server (port 5180, proxying `/api` and `/ws` to 4399) concurrently.
+- `npm run dev` — starts the server (tsx watch, port 4399, examples/.specs) and Vite dev server (port 5180, proxying `/api` and `/ws` to 4399) concurrently.
 - `npm run build` — tsup + vite build.
-- `npm start` — starts the built output against examples/specs.
+- `npm start` — starts the built output against examples/.specs.
 
 ## v2 Feature Design
 
@@ -256,7 +256,7 @@ and manage them under the same `.specs/` directory as sidecar files in Git.
 
 ### Example
 
-- `examples/specs/screens/` category: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter with screen field definitions + `<Drawing src="screens/login" />`) / `login.excalidraw` (a simple wireframe of the login screen).
+- `examples/.specs/screens/` category: `_.mdx` / `_template.mdx` / `login.mdx` (front-matter with screen field definitions + `<Drawing src="screens/login" />`) / `login.excalidraw` (a simple wireframe of the login screen).
 
 ## v5 Feature Design: MCP Server / Lint API / Rename & Delete
 

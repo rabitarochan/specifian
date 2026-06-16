@@ -44,9 +44,9 @@ export async function initSpecs(targetDir: string): Promise<void> {
     }
   }
 
-  // Resolve examples/specs relative to this compiled module
-  // dist/cli/index.js -> ../../examples/specs
-  const examplesDir = fileURLToPath(new URL('../../examples/specs', import.meta.url));
+  // Resolve examples/.specs relative to this compiled module
+  // dist/cli/index.js -> ../../examples/.specs
+  const examplesDir = fileURLToPath(new URL('../../examples/.specs', import.meta.url));
 
   try {
     await fs.access(examplesDir);

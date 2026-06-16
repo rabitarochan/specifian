@@ -35,11 +35,11 @@
   ],
   "scripts": {
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "node --watch --import tsx src/cli/index.ts serve --dir examples/specs --port 4399",
+    "dev:server": "node --watch --import tsx src/cli/index.ts serve --dir examples/.specs --port 4399",
     "dev:client": "vite",
     "build": "tsup && vite build",
     "typecheck": "tsc --noEmit",
-    "start": "node dist/cli/index.js serve --dir examples/specs",
+    "start": "node dist/cli/index.js serve --dir examples/.specs",
     "prepublishOnly": "npm run typecheck && npm run build",
     "publish:beta": "npm version prerelease --preid=beta && npm publish --tag beta"
   },
