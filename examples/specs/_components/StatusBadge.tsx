@@ -1,7 +1,7 @@
 /**
  * Sample component that displays a status as a colored pill badge.
  *
- * Files placed in specs/_components/ are available in all MDX files without an explicit import.
+ * Files placed in .specs/_components/ are available in all MDX files without an explicit import.
  * The file name (PascalCase) or named export name becomes the component name.
  *
  * Note: Files inside _components can only import from 'react'.

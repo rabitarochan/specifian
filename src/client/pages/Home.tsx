@@ -67,7 +67,7 @@ export function Home() {
       <div className="sb-prose">
         <h1>Welcome to specifian</h1>
         <p>
-          Browse and edit MDX specs under <code>specs/</code>.
+          Browse and edit MDX specs under <code>.specs/</code>.
           Choose a category or spec from the sidebar on the left.
         </p>
         {categories.length > 0 ? (
