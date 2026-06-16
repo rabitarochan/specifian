@@ -1,69 +1,69 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "API 定義スキーマ",
-  "description": "API エンドポイントの仕様を定義するスキーマ",
+  "title": "API Definition Schema",
+  "description": "Schema for defining API endpoint specifications",
   "type": "object",
   "required": ["title", "endpoint"],
   "properties": {
     "title": {
       "type": "string",
-      "title": "タイトル",
-      "description": "API のタイトル"
+      "title": "Title",
+      "description": "Title of the API"
     },
     "description": {
       "type": "string",
-      "title": "説明",
-      "description": "API の説明"
+      "title": "Description",
+      "description": "Description of the API"
     },
     "endpoint": {
       "type": "object",
-      "title": "エンドポイント",
-      "description": "API エンドポイント定義",
+      "title": "Endpoint",
+      "description": "API endpoint definition",
       "required": ["method", "path"],
       "properties": {
         "method": {
           "type": "string",
-          "title": "メソッド",
-          "description": "HTTP メソッド",
+          "title": "Method",
+          "description": "HTTP method",
           "enum": ["GET", "POST", "PUT", "DELETE", "PATCH"]
         },
         "path": {
           "type": "string",
-          "title": "パス",
-          "description": "エンドポイントパス"
+          "title": "Path",
+          "description": "Endpoint path"
         },
         "description": {
           "type": "string",
-          "title": "説明",
-          "description": "エンドポイントの説明"
+          "title": "Description",
+          "description": "Description of the endpoint"
         },
         "params": {
           "type": "array",
-          "title": "パラメータ",
-          "description": "クエリパラメータやリクエストボディのパラメータ",
+          "title": "Parameters",
+          "description": "Query parameters or request body parameters",
           "items": {
             "type": "object",
             "required": ["name", "type"],
             "properties": {
               "name": {
                 "type": "string",
-                "title": "パラメータ名",
-                "description": "パラメータ名"
+                "title": "Parameter Name",
+                "description": "Parameter name"
               },
               "type": {
                 "type": "string",
-                "title": "型",
-                "description": "パラメータの型（string、integer、boolean など）"
+                "title": "Type",
+                "description": "Parameter type (e.g. string, integer, boolean)"
               },
               "required": {
                 "type": "boolean",
-                "title": "必須",
-                "description": "必須パラメータかどうか"
+                "title": "Required",
+                "description": "Whether the parameter is required"
               },
               "description": {
                 "type": "string",
-                "title": "説明",
-                "description": "パラメータの説明"
+                "title": "Description",
+                "description": "Description of the parameter"
               }
             },
             "additionalProperties": true

@@ -1,19 +1,19 @@
 ---
-title: 新しいテーブル
-description: テーブルの説明
+title: New Table
+description: Description of the table
 table:
   name: table_name
-  description: テーブルの説明
+  description: Description of the table
   columns:
-    - { name: id, type: bigint, primaryKey: true, description: 主キー }
-    - { name: created_at, type: timestamp, nullable: false, description: 作成日時 }
-    - { name: updated_at, type: timestamp, nullable: false, description: 更新日時 }
+    - { name: id, type: bigint, primaryKey: true, description: Primary key }
+    - { name: created_at, type: timestamp, nullable: false, description: Creation timestamp }
+    - { name: updated_at, type: timestamp, nullable: false, description: Last updated timestamp }
 ---
 
 # {title}
 
 <TableDefinition data={data.table} />
 
-## 補足説明
+## Notes
 
-テーブルの設計意図や特殊な取り扱いについて、ここに記載します。
+Describe the design intent and any special handling for this table here.

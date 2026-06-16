@@ -1,20 +1,20 @@
 ---
-title: ホーム
-description: specifian へようこそ。設計ドキュメントの一元管理ツール
+title: Home
+description: Welcome to specifian — a centralized tool for managing design documents
 ---
 
-# ホーム
+# Home
 
-specifian へようこそ。このツールは Storybook のように、`specs/` 配下の MDX ファイルを Web で表示・編集する設計ドキュメント管理ツールです。
+Welcome to specifian. Like Storybook, this tool lets you view and edit MDX files under `specs/` as design documents in a web UI.
 
-## specifian の使い方
+## How to use specifian
 
-### front-matter がデータになる
-各スペック MDX の YAML front-matter を構造化設計データとして扱います。本文の React コンポーネントから `data` 変数でアクセスでき、API でも一括取得できます。
+### front-matter becomes data
+Each spec MDX file's YAML front-matter is treated as structured design data. You can access it via the `data` variable inside body React components, and fetch it all at once through the API.
 
 ```markdown
 ---
-title: users テーブル
+title: users table
 table:
   name: users
   columns:
@@ -26,26 +26,26 @@ table:
 <TableDefinition data={data.table} />
 ```
 
-### wiki リンクで関連スペック参照
-`[[category:slug]]` の形式で、同じプロジェクト内の他のスペックへリンクできます。スペック間の依存関係も可視化されます。
+### Reference related specs with wiki links
+Use the `[[category:slug]]` syntax to link to other specs in the same project. Dependency relationships between specs are also visualized.
 
 ```markdown
-[[tables:users]] // specs/tables/users.mdx へのリンク
-[[api:users-api|ユーザー API]] // 表示テキストを指定
+[[tables:users]] // link to specs/tables/users.mdx
+[[api:users-api|Users API]] // specify display text
 ```
 
-グラフページ (`/graph`) では、リンクネットワークをインタラクティブに表示できます。
+On the graph page (`/graph`) you can interactively explore the link network.
 
-### Web UI で編集
-左のサイドバーで「編集」ボタンを押すと、左に Markdown エディター、右にライブプレビューのスプリットビューで編集できます。Ctrl+S または「保存」ボタンで ファイルに反映されます。
+### Edit in the Web UI
+Click the "Edit" button in the left sidebar to open a split view with a Markdown editor on the left and a live preview on the right. Press Ctrl+S or click "Save" to write changes to the file.
 
-## サンプルカテゴリー
+## Sample categories
 
-- **[[tables:_]]** — データベーステーブル定義
-- **[[api:_]]** — API 仕様
-- **[[screens:_]]** — 画面設計・ワイヤーフレーム
-- **[[architecture:_]]** — システム構成とアーキテクチャ
+- **[[tables:_]]** — Database table definitions
+- **[[api:_]]** — API specifications
+- **[[screens:_]]** — Screen design and wireframes
+- **[[architecture:_]]** — System architecture and configuration
 
-各カテゴリーの `_.mdx` はインデックスページで、カテゴリー内のスペック一覧を表示します。`_template.mdx` は新規スペック作成時のテンプレートになります。Mermaid コードフェンスで図表も描画できます。
+The `_.mdx` file in each category is the index page, showing a list of specs in that category. `_template.mdx` is used as the template when creating a new spec. Diagrams can also be rendered using Mermaid code fences.
 
 <SpecList />

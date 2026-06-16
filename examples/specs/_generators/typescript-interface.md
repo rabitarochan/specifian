@@ -1,6 +1,6 @@
 ---
 name: typescript-interface
-description: テーブル定義 front-matter から TypeScript interface を生成する
+description: Generate a TypeScript interface from table definition front-matter
 ---
 
 # `{{ spec.data.table.name | pascal }}.ts`
