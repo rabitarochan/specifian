@@ -275,7 +275,7 @@ npm run dev
 
 - Starts the server (port 4399) and the Vite development server (port 5180) concurrently.
 - On the client side, Vite proxies `/api` and `/ws` to localhost:4399.
-- Uses `examples/specs` as the sample directory.
+- Uses `examples/.specs` as the sample directory.
 
 ### Building
 
@@ -292,7 +292,7 @@ npm run build
 npm start
 ```
 
-Example: starts the production build of specifian using `examples/specs`.
+Example: starts the production build of specifian using `examples/.specs`.
 
 ## Technology Stack
 
