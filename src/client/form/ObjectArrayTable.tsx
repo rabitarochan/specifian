@@ -1,9 +1,9 @@
 /**
- * array-of-(all-scalar)-object 用の編集テーブル (本機能の主役)。
- * - 1 列 = 1 プロパティ (ヘッダー = title ?? key、required は * 付き)
- * - 1 行 = 配列の 1 要素 (オブジェクト)
- * - セルはコンパクト入力 (boolean=checkbox / enum=select / それ以外=text|number)
- * - 行操作: ↑ ↓ 削除、フッターに「+ 行を追加」
+ * Editable table for array-of-(all-scalar)-object (the primary widget for this pattern).
+ * - 1 column = 1 property (header = title ?? key; required marked with *)
+ * - 1 row = 1 array element (object)
+ * - Cells use compact inputs (boolean=checkbox / enum=select / else=text|number)
+ * - Row actions: ↑ ↓ Delete; footer has "+ Add row"
  */
 import type { JsonSchema } from './schemaTypes';
 import { ScalarControl } from './ScalarControl';
@@ -17,9 +17,9 @@ import {
 } from './formUtils';
 
 interface Props {
-  /** array スキーマ (items は all-scalar object) */
+  /** Array schema (items must be an all-scalar object) */
   schema: JsonSchema;
-  /** 配列値 */
+  /** Array value */
   rows: unknown[];
   onChange: (next: unknown[]) => void;
 }
@@ -59,7 +59,7 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
 
   const addRow = (): void => {
     const newRow: Record<string, unknown> = {};
-    // 列の default のみ初期化 (空値はキー未設定のまま残す)
+    // Initialize only column defaults (leave unset keys empty)
     for (const key of columns) {
       const colSchema = props[key];
       if (colSchema.default !== undefined) {
@@ -89,7 +89,7 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                   </th>
                 );
               })}
-              <th className="sb-table-widget__actions-head" aria-label="操作" />
+              <th className="sb-table-widget__actions-head" aria-label="Actions" />
             </tr>
           </thead>
           <tbody>
@@ -99,7 +99,7 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                   className="sb-table-widget__empty"
                   colSpan={columns.length + 1}
                 >
-                  行がありません
+                  No rows
                 </td>
               </tr>
             ) : (
@@ -117,7 +117,7 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                             value={record[key]}
                             allowEmpty={!required}
                             compact
-                            ariaLabel={`${fieldLabel(colSchema, key)} (${rowIndex + 1}行目)`}
+                            ariaLabel={`${fieldLabel(colSchema, key)} (row ${rowIndex + 1})`}
                             onChange={(next) =>
                               updateCell(rowIndex, key, next)
                             }
@@ -129,8 +129,8 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                       <button
                         type="button"
                         className="sb-row-btn"
-                        title="上へ"
-                        aria-label="上へ移動"
+                        title="Move up"
+                        aria-label="Move up"
                         disabled={rowIndex === 0}
                         onClick={() => moveRow(rowIndex, -1)}
                       >
@@ -139,8 +139,8 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                       <button
                         type="button"
                         className="sb-row-btn"
-                        title="下へ"
-                        aria-label="下へ移動"
+                        title="Move down"
+                        aria-label="Move down"
                         disabled={rowIndex === rows.length - 1}
                         onClick={() => moveRow(rowIndex, 1)}
                       >
@@ -149,11 +149,11 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
                       <button
                         type="button"
                         className="sb-row-btn sb-row-btn--danger"
-                        title="削除"
-                        aria-label="行を削除"
+                        title="Delete"
+                        aria-label="Delete row"
                         onClick={() => removeRow(rowIndex)}
                       >
-                        削除
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -165,7 +165,7 @@ export function ObjectArrayTable({ schema, rows, onChange }: Props) {
       </div>
       <div className="sb-table-widget__footer">
         <button type="button" className="sb-link-btn" onClick={addRow}>
-          + 行を追加
+          + Add row
         </button>
       </div>
     </div>

@@ -1,7 +1,7 @@
 /**
- * POST /api/lint — 保存せずにコンテンツを検証する。
- * ボディ: LintRequest { content: string, category?: string, slug?: string }
- * レスポンス: LintResponse { issues: LintIssue[] }
+ * POST /api/lint — Validate content without saving.
+ * Body: LintRequest { content: string, category?: string, slug?: string }
+ * Response: LintResponse { issues: LintIssue[] }
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -15,9 +15,9 @@ export function lintRouter(specsDir: string): Router {
     try {
       const body = req.body as LintRequest;
 
-      // content は必須かつ string であること
+      // content is required and must be a string
       if (typeof body.content !== 'string') {
-        res.status(400).json({ error: 'content は string である必要があります' });
+        res.status(400).json({ error: 'content must be a string' });
         return;
       }
 

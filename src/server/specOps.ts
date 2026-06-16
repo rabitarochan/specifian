@@ -1,7 +1,7 @@
 /**
- * specOps.ts — スペックのリネーム・削除・参照元検索。
- * routes/rename.ts と MCP サーバーの両方から利用する。
- * DESIGN.md「v5 機能設計」参照。
+ * specOps.ts — Spec rename, delete, and back-reference lookup.
+ * Used by both routes/rename.ts and the MCP server.
+ * See DESIGN.md "v5 feature design".
  */
 
 import fs from 'node:fs/promises';
@@ -9,9 +9,9 @@ import path from 'node:path';
 import { loadSpecs, guardPath } from './store.js';
 import { parseSpecId, toSpecId, WIKILINK_PATTERN, type SpecMeta } from '../shared/types.js';
 
-// ─── エラークラス ──────────────────────────────────────────────────────────────
+// ─── Error class ──────────────────────────────────────────────────────────────
 
-/** HTTP ステータス付きエラー。ルートハンドラーでステータスマッピングに使う */
+/** Error with an HTTP status code, used for status mapping in route handlers. */
 export class SpecOpsError extends Error {
   constructor(
     public readonly status: number,
@@ -22,52 +22,53 @@ export class SpecOpsError extends Error {
   }
 }
 
-// ─── 内部ユーティリティ ────────────────────────────────────────────────────────
+// ─── Internal utilities ────────────────────────────────────────────────────────
 
 /**
- * パストラバーサルガードつきでスペックの絶対パスを返す。
- * specsDir 外を指す場合は SpecOpsError(400) を投げる。
+ * Return the absolute path for a spec, guarded against path traversal.
+ * Throws SpecOpsError(400) when the resolved path is outside specsDir.
  */
 function resolveSpecPath(specsDir: string, category: string, slug: string): string {
   const parts = category === '' ? [] : category.split('/');
   const filePath = path.join(specsDir, ...parts, `${slug}.mdx`);
   if (!guardPath(specsDir, filePath)) {
-    throw new SpecOpsError(400, 'パストラバーサルは許可されていません');
+    throw new SpecOpsError(400, 'Path traversal is not allowed');
   }
   return filePath;
 }
 
-// ─── フェンス・インラインコード除外ロジック ──────────────────────────────────
+// ─── Fence / inline-code exclusion logic ──────────────────────────────────────
 
 /**
- * ソース文字列中の「書き換え禁止範囲」を [start, end) のペア配列で返す。
- * - フェンスコードブロック (``` または ~~~)
- * - インラインコード (`...`)
- * 内の位置は wiki リンク置換から除外される。
+ * Return [start, end) pairs for ranges that must not be rewritten.
+ * Positions inside:
+ * - fenced code blocks (``` or ~~~)
+ * - inline code (`...`)
+ * are excluded from wiki link replacement.
  */
 function buildProtectedRanges(src: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
 
-  // フェンスコードブロック: ``` または ~~~ で始まる行から終わる行まで
-  // バックティックフェンス (``` 3+ 個)
+  // Fenced code blocks: from a line starting with ``` or ~~~ to the closing fence
+  // Backtick fence (3+ backticks)
   const fenceRe = /(`{3,}|~{3,})[^\n]*\n[\s\S]*?\1/g;
   let m: RegExpExecArray | null;
   while ((m = fenceRe.exec(src)) !== null) {
     ranges.push([m.index, m.index + m[0].length]);
   }
 
-  // インラインコード (`...`) — ただしフェンス内の ` はすでにフェンス範囲でカバー済み
-  // シングルバックティックのインラインコードを抽出 (フェンスとは重複しても後でチェック)
+  // Inline code (`...`) — backticks inside fences are already covered by fence ranges;
+  // extract single-backtick inline code (overlaps with fences are resolved by isProtected)
   const inlineRe = /`[^`\n]*`/g;
   while ((m = inlineRe.exec(src)) !== null) {
     ranges.push([m.index, m.index + m[0].length]);
   }
 
-  // ソート & マージは不要 (isProtected で個別チェック)
+  // No sort/merge needed — isProtected checks each position individually
   return ranges;
 }
 
-/** 位置 pos が保護範囲内かどうか判定 */
+/** Return true when pos falls within any protected range. */
 function isProtected(pos: number, ranges: Array<[number, number]>): boolean {
   for (const [s, e] of ranges) {
     if (pos >= s && pos < e) return true;
@@ -76,20 +77,20 @@ function isProtected(pos: number, ranges: Array<[number, number]>): boolean {
 }
 
 /**
- * src 中の wiki リンクで target が `from` と一致するものを `to` へ書き換える。
- * フェンスコードブロック・インラインコード内は変更しない。
- * 行末コードを正規化しない (バイト列をそのまま保持)。
+ * Rewrite wiki links in src whose target matches `from` to `to`.
+ * Links inside fenced code blocks or inline code are left unchanged.
+ * Line endings are not normalised (byte sequence is preserved as-is).
  */
 function rewriteLinks(src: string, from: string, to: string): string {
   if (!src.includes(`[[${from}]]`) && !src.includes(`[[${from}|`)) {
-    // 早期脱出: 対象なし
+    // Early exit: no matching links
     return src;
   }
 
   const protected_ = buildProtectedRanges(src);
   const re = new RegExp(WIKILINK_PATTERN.source, WIKILINK_PATTERN.flags);
 
-  // 結果を部分文字列の結合で構築 (splice 方式でメモリを抑える)
+  // Build result by concatenating substrings (splice-style to keep memory low)
   let result = '';
   let lastIndex = 0;
   let match: RegExpExecArray | null;
@@ -99,11 +100,11 @@ function rewriteLinks(src: string, from: string, to: string): string {
     if (target !== from) continue;
     if (isProtected(match.index, protected_)) continue;
 
-    // マッチ前のテキストをそのまま追加
+    // Append text before the match unchanged
     result += src.slice(lastIndex, match.index);
 
-    // リンクを書き換え
-    const label = match[2]; // undefined = ラベルなし
+    // Rewrite the link
+    const label = match[2]; // undefined = no label
     if (label !== undefined) {
       result += `[[${to}|${label}]]`;
     } else {
@@ -117,11 +118,11 @@ function rewriteLinks(src: string, from: string, to: string): string {
   return result;
 }
 
-// ─── 公開 API ─────────────────────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * findRefs — id を wiki リンクで参照しているスペック ID 一覧を返す (ソート済み)。
- * id 自身は除外する。
+ * findRefs — Return a sorted list of spec IDs that reference id via wiki links.
+ * The id itself is excluded.
  */
 export async function findRefs(specsDir: string, id: string): Promise<string[]> {
   const specs = await loadSpecs(specsDir);
@@ -133,82 +134,82 @@ export async function findRefs(specsDir: string, id: string): Promise<string[]> 
 }
 
 /**
- * renameSpec — スペックのファイル名変更 + 全スペックの wiki リンク一括書き換え。
+ * renameSpec — Rename a spec file and rewrite all wiki links across every spec.
  *
- * バリデーション:
- *   - from / to どちらも parseSpecId で valid な ID でなければ 400
- *   - slug が "_" または "_template" は 400 (インデックス/テンプレートはリネーム不可)
- *   - from が loadSpecs に存在しなければ 404
- *   - to が既に存在すれば 409
- *   - to のカテゴリーディレクトリーが存在しなければ 400 (mkdir しない)
- *   - パストラバーサル 400
+ * Validation:
+ *   - Both from and to must be valid IDs per parseSpecId, or 400
+ *   - slug "_" or "_template" is rejected with 400 (index/template cannot be renamed)
+ *   - from must exist in loadSpecs, or 404
+ *   - to must not already exist, or 409
+ *   - to's category directory must exist, or 400 (we do not mkdir)
+ *   - Path traversal → 400
  *
- * 書き換え:
- *   - フェンスコードブロック・インラインコード内の wiki リンクは変更しない
- *   - ファイルの行末を正規化しない
+ * Rewrite behaviour:
+ *   - Wiki links inside fenced code blocks or inline code are not changed
+ *   - File line endings are not normalised
  *
- * @returns 新しい SpecMeta と、実際に wiki リンクが書き換わったスペック ID 一覧 (ソート済み)
+ * @returns The new SpecMeta and a sorted list of spec IDs whose wiki links were rewritten.
  */
 export async function renameSpec(
   specsDir: string,
   from: string,
   to: string,
 ): Promise<{ meta: SpecMeta; rewrittenFiles: string[] }> {
-  // ── ID バリデーション ───────────────────────────────────────────────
+  // ── ID validation ──────────────────────────────────────────────────
   const parsedFrom = parseSpecId(from);
   if (!parsedFrom) {
-    throw new SpecOpsError(400, `無効なスペック ID: ${from}`);
+    throw new SpecOpsError(400, `Invalid spec ID: ${from}`);
   }
   const parsedTo = parseSpecId(to);
   if (!parsedTo) {
-    throw new SpecOpsError(400, `無効なスペック ID: ${to}`);
+    throw new SpecOpsError(400, `Invalid spec ID: ${to}`);
   }
 
-  // インデックス / テンプレートは slug ベースで禁止
+  // Index and template slugs cannot be renamed
   if (parsedFrom.slug === '_' || parsedFrom.slug === '_template') {
-    throw new SpecOpsError(400, 'インデックス/テンプレートはリネームできません');
+    throw new SpecOpsError(400, 'Index and template specs cannot be renamed');
   }
   if (parsedTo.slug === '_' || parsedTo.slug === '_template') {
-    throw new SpecOpsError(400, 'リネーム先の slug にインデックス/テンプレートは使用できません');
+    throw new SpecOpsError(400, 'The target slug cannot be an index or template');
   }
 
-  // ── ファイルパス解決 & パストラバーサルガード ──────────────────────
+  // ── Resolve file paths & path-traversal guard ──────────────────────
   const fromPath = resolveSpecPath(specsDir, parsedFrom.category, parsedFrom.slug);
   const toPath = resolveSpecPath(specsDir, parsedTo.category, parsedTo.slug);
 
-  // ── from の存在確認 ─────────────────────────────────────────────────
+  // ── Verify from exists ─────────────────────────────────────────────
   const specs = await loadSpecs(specsDir);
   const fromMeta = specs.find((s) => s.id === from);
   if (!fromMeta) {
-    throw new SpecOpsError(404, `スペックが見つかりません: ${from}`);
+    throw new SpecOpsError(404, `Spec not found: ${from}`);
   }
 
-  // ── to の非存在確認 ─────────────────────────────────────────────────
+  // ── Verify to does not exist ───────────────────────────────────────
   const toExists = specs.some((s) => s.id === to);
   if (toExists) {
-    throw new SpecOpsError(409, `リネーム先は既に存在します: ${to}`);
+    throw new SpecOpsError(409, `Rename target already exists: ${to}`);
   }
 
-  // ── to のカテゴリーディレクトリー存在確認 ─────────────────────────
+  // ── Verify to's category directory exists ──────────────────────────
   const toCategoryDir = path.dirname(toPath);
   try {
     await fs.access(toCategoryDir);
   } catch {
     const relCategoryDir = path.relative(specsDir, toCategoryDir).split(path.sep).join('/');
-    throw new SpecOpsError(400, `リネーム先のカテゴリーディレクトリーが存在しません: ${relCategoryDir}`);
+    throw new SpecOpsError(400, `Target category directory does not exist: ${relCategoryDir}`);
   }
 
-  // ── ファイルリネーム ────────────────────────────────────────────────
+  // ── Rename file ────────────────────────────────────────────────────
   await fs.rename(fromPath, toPath);
 
-  // ── 全スペック (リネーム後のパス込み) の wiki リンク書き換え ───────
-  // リネーム後に再ロードして最新のファイル一覧を取得
+  // ── Rewrite wiki links across all specs (including the renamed one) ─
+  // Reload after rename to get the latest file list
   const specsAfter = await loadSpecs(specsDir);
   const rewrittenIds: string[] = [];
 
   await Promise.all(
     specsAfter.map(async (spec) => {
-      // リネーム後のスペックが to として含まれることに注意 (自己リンクも書き換え対象)
+      // Note: the renamed spec is now listed under `to` (self-links are also rewritten)
       const parts = spec.category === '' ? [] : spec.category.split('/');
       const filePath = path.join(specsDir, ...parts, `${spec.slug}.mdx`);
 
@@ -229,37 +230,37 @@ export async function renameSpec(
 
   rewrittenIds.sort();
 
-  // ── リネーム後の meta を取得 ────────────────────────────────────────
+  // ── Load meta after rename ────────────────────────────────────────
   const { loadSpec } = await import('./store.js');
   const result = await loadSpec(specsDir, toPath);
   if (!result) {
-    throw new SpecOpsError(500, 'リネーム後のスペック読み込みに失敗しました');
+    throw new SpecOpsError(500, 'Failed to read spec after rename');
   }
 
   return { meta: result.meta, rewrittenFiles: rewrittenIds };
 }
 
 /**
- * deleteSpec — スペックファイルを削除する。
+ * deleteSpec — Delete a spec file.
  *
- * バリデーション:
- *   - id が parseSpecId で valid でなければ 400
- *   - id が loadSpecs に存在しなければ 404 (_template も削除可)
- *   - パストラバーサル 400
+ * Validation:
+ *   - id must be valid per parseSpecId, or 400
+ *   - id must exist in loadSpecs, or 404 (_template can also be deleted)
+ *   - Path traversal → 400
  */
 export async function deleteSpec(specsDir: string, id: string): Promise<void> {
   const parsed = parseSpecId(id);
   if (!parsed) {
-    throw new SpecOpsError(400, `無効なスペック ID: ${id}`);
+    throw new SpecOpsError(400, `Invalid spec ID: ${id}`);
   }
 
   const filePath = resolveSpecPath(specsDir, parsed.category, parsed.slug);
 
-  // 存在確認 (loadSpecs を使う — _template も検出できる)
+  // Verify existence using loadSpecs — it also detects _template
   const specs = await loadSpecs(specsDir);
   const exists = specs.some((s) => s.id === id);
   if (!exists) {
-    throw new SpecOpsError(404, `スペックが見つかりません: ${id}`);
+    throw new SpecOpsError(404, `Spec not found: ${id}`);
   }
 
   await fs.unlink(filePath);

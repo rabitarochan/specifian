@@ -1,10 +1,10 @@
-/** ユーザー JSX のランタイムエラーを捕捉してアプリ全体のクラッシュを防ぐ */
+/** Catches runtime errors in user JSX to prevent the entire app from crashing. */
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { ErrorPanel } from './ErrorPanel';
 
 interface Props {
   children: ReactNode;
-  /** children が変わったらリセットするためのキー */
+  /** Key used to reset when children change */
   resetKey?: unknown;
 }
 
@@ -20,7 +20,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
-    // 開発時の手掛かりとしてコンソールへも出す
+    // Also log to console as a development hint
     console.error('MDX runtime error:', error, info.componentStack);
   }
 
@@ -32,7 +32,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.error) {
-      return <ErrorPanel title="描画エラー" error={this.state.error} />;
+      return <ErrorPanel title="Render Error" error={this.state.error} />;
     }
     return this.props.children;
   }

@@ -1,14 +1,14 @@
 /**
- * wiki リンク remark プラグイン。
- * text ノードを走査し `[[target]]` / `[[target|label]]` を mdast `link` ノードへ置換する。
- * url は `#wiki:<target>` とし、描画側 (`a` レンダラー) が router Link に変換する。
+ * Remark plugin for wiki links.
+ * Traverses text nodes and replaces `[[target]]` / `[[target|label]]` with mdast `link` nodes.
+ * The url is `#wiki:<target>`; the rendering side (`a` renderer) converts it to a router Link.
  *
- * `code` / `inlineCode` は text ノードではないため visit('text') は触れない。
+ * `code` / `inlineCode` are not text nodes, so visit('text') does not touch them.
  */
 import { visit } from 'unist-util-visit';
 import type { Root, Text, Link, PhrasingContent, Parent } from 'mdast';
 
-// 注意: WIKILINK_PATTERN は global フラグつきなので、毎回新しい RegExp を生成する。
+// Note: WIKILINK_PATTERN uses the global flag, so a new RegExp must be created each time.
 const SOURCE = /\[\[([^\]|]+?)(?:\|([^\]]+?))?\]\]/.source;
 
 export function remarkWikiLink() {
@@ -46,7 +46,7 @@ export function remarkWikiLink() {
       }
 
       parent.children.splice(index, 1, ...replacement);
-      // 置換したノード群はスキップ (再走査不要)
+      // Skip the replaced nodes (no need to re-traverse)
       return index + replacement.length;
     });
   };

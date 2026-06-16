@@ -1,7 +1,7 @@
 /**
- * content (生 MDX) を受け取り、コンパイル → コンテキスト供給 → 描画する。
- * - コンパイルエラー: ErrorPanel
- * - 描画 (ランタイム) エラー: ErrorBoundary → ErrorPanel
+ * Receives raw MDX content, compiles it, supplies context, then renders it.
+ * - Compile error: ErrorPanel
+ * - Render (runtime) error: ErrorBoundary → ErrorPanel
  */
 import { useMemo } from 'react';
 import type { SpecMeta } from '@shared/types';
@@ -17,7 +17,7 @@ interface Props {
   specs: SpecMeta[];
   category: string;
   slug: string;
-  /** wiki リンクのクリックを通常遷移の代わりに処理する (プレビューペイン用) */
+  /** Handle wiki link clicks instead of normal navigation (for preview panes). */
   onWikiNavigate?: (id: string) => void;
 }
 
@@ -30,20 +30,20 @@ export function MdxRenderer({ content, specs, category, slug, onWikiNavigate }: 
     version: userVersion,
   } = useUserComponents();
 
-  // ユーザー定義コンポーネントを組み込みへ重ね合わせる (名前衝突時はユーザー優先)。
+  // Merge user-defined components on top of built-ins (user wins on name conflict).
   const components = useMemo(
     () => ({ ...mdxComponents, ...userComponents }),
     [userComponents],
   );
 
   if (error) {
-    return <ErrorPanel title="コンパイルエラー" error={error} />;
+    return <ErrorPanel title="Compile Error" error={error} />;
   }
-  // ユーザーコンポーネントの初回ロード完了を待ってから描画する。
-  // 待たずに描画すると、未ロードのコンポーネントを参照する MDX が
-  // 描画時に throw し、ErrorBoundary がエラー状態のまま固定されてしまう。
+  // Wait for the initial user-component load to complete before rendering.
+  // Without this, MDX that references an unloaded component would throw
+  // during render, permanently locking the ErrorBoundary in an error state.
   if ((loading && !Content) || !userReady) {
-    return <div className="sb-loading">コンパイル中…</div>;
+    return <div className="sb-loading">Compiling…</div>;
   }
   if (!Content) return null;
 
@@ -52,7 +52,7 @@ export function MdxRenderer({ content, specs, category, slug, onWikiNavigate }: 
       {userErrors.length > 0 && (
         <div className="sb-error-panel" role="alert">
           <div className="sb-error-panel__title">
-            ユーザーコンポーネントのコンパイルエラー
+            User component compile error
           </div>
           <ul className="sb-error-panel__list">
             {userErrors.map((e) => (

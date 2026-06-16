@@ -34,7 +34,7 @@ export function specsRouter(specsDir: string): Router {
   router.post('/', async (req: Request, res: Response) => {
     const body = req.body as CreateSpecRequest;
     if (!body.slug) {
-      res.status(400).json({ error: 'slug は必須です' });
+      res.status(400).json({ error: 'slug is required' });
       return;
     }
 
@@ -47,14 +47,14 @@ export function specsRouter(specsDir: string): Router {
     const newFilePath = path.join(specsDir, ...categoryParts, `${slug}.mdx`);
 
     if (!guardPath(specsDir, newFilePath)) {
-      res.status(400).json({ error: 'パストラバーサルが検出されました' });
+      res.status(400).json({ error: 'Path traversal detected' });
       return;
     }
 
     // Check existence
     try {
       await fs.access(newFilePath);
-      res.status(409).json({ error: `"${slug}" は既に存在します` });
+      res.status(409).json({ error: `"${slug}" already exists` });
       return;
     } catch {
       // Expected: file does not exist
@@ -63,9 +63,9 @@ export function specsRouter(specsDir: string): Router {
     // Try to use template
     let content: string;
     if (slug === '_') {
-      // カテゴリーインデックスは _template.mdx をコピーせず、
-      // categories.ts の新規カテゴリーと同じ SpecList 入りデフォルトにする
-      const indexTitle = body.title ?? (category || 'ホーム');
+      // For a category index, do not copy _template.mdx;
+      // use the same SpecList default as categories.ts for new categories.
+      const indexTitle = body.title ?? (category || 'Home');
       content = `---\ntitle: ${indexTitle}\n---\n\n# ${indexTitle}\n\n<SpecList />\n`;
     } else {
       const templatePath = path.join(specsDir, ...categoryParts, '_template.mdx');
@@ -85,7 +85,7 @@ export function specsRouter(specsDir: string): Router {
       await fs.writeFile(newFilePath, content, 'utf-8');
       const result = await loadSpec(specsDir, newFilePath);
       if (!result) {
-        res.status(500).json({ error: '作成後の読み込みに失敗しました' });
+        res.status(500).json({ error: 'Failed to read spec after creation' });
         return;
       }
       res.status(201).json({ meta: result.meta });
@@ -98,13 +98,13 @@ export function specsRouter(specsDir: string): Router {
   router.get('/*', async (req: Request, res: Response) => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 
     const segments = paramPath.split('/').filter(Boolean);
     if (segments.length === 0) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 
@@ -115,7 +115,7 @@ export function specsRouter(specsDir: string): Router {
 
     for (const candidate of candidates) {
       if (!guardPath(specsDir, candidate)) {
-        res.status(400).json({ error: 'パストラバーサルが検出されました' });
+        res.status(400).json({ error: 'Path traversal detected' });
         return;
       }
       const result = await loadSpec(specsDir, candidate);
@@ -125,26 +125,26 @@ export function specsRouter(specsDir: string): Router {
       }
     }
 
-    res.status(404).json({ error: `スペックが見つかりません: ${paramPath}` });
+    res.status(404).json({ error: `Spec not found: ${paramPath}` });
   });
 
   // PUT /api/specs/* — save spec
   router.put('/*', async (req: Request, res: Response) => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 
     const body = req.body as SaveSpecRequest;
     if (typeof body.content !== 'string') {
-      res.status(400).json({ error: 'content は必須です' });
+      res.status(400).json({ error: 'content is required' });
       return;
     }
 
     const segments = paramPath.split('/').filter(Boolean);
     if (segments.length === 0) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 
@@ -156,7 +156,7 @@ export function specsRouter(specsDir: string): Router {
     let foundCandidate: string | null = null;
     for (const candidate of candidates) {
       if (!guardPath(specsDir, candidate)) {
-        res.status(400).json({ error: 'パストラバーサルが検出されました' });
+        res.status(400).json({ error: 'Path traversal detected' });
         return;
       }
       try {
@@ -169,7 +169,7 @@ export function specsRouter(specsDir: string): Router {
     }
 
     if (!foundCandidate) {
-      res.status(404).json({ error: `スペックが見つかりません: ${paramPath}` });
+      res.status(404).json({ error: `Spec not found: ${paramPath}` });
       return;
     }
 
@@ -177,11 +177,11 @@ export function specsRouter(specsDir: string): Router {
       await fs.writeFile(foundCandidate, body.content, 'utf-8');
       const result = await loadSpec(specsDir, foundCandidate);
       if (!result) {
-        res.status(500).json({ error: '保存後の読み込みに失敗しました' });
+        res.status(500).json({ error: 'Failed to read spec after saving' });
         return;
       }
 
-      // 保存後に lint を実行して issues を返す (lint 失敗でも保存は成功扱い)
+      // Run lint after saving and include issues in the response (lint failure does not affect save success)
       let issues: LintIssue[] = [];
       try {
         const { lintContent } = await import('../lintCore.js');
@@ -191,8 +191,8 @@ export function specsRouter(specsDir: string): Router {
           slug,
         });
       } catch (lintErr) {
-        // lintCore が未実装 / 例外でも保存結果は返す
-        console.error('[specs] lintContent 失敗 (無視):', lintErr);
+        // Return the save result even if lintCore is unavailable or throws
+        console.error('[specs] lintContent failed (ignored):', lintErr);
       }
 
       res.json({ meta: result.meta, issues });
@@ -201,17 +201,17 @@ export function specsRouter(specsDir: string): Router {
     }
   });
 
-  // DELETE /api/specs/* — スペック削除
+  // DELETE /api/specs/* — delete spec
   router.delete('/*', async (req: Request, res: Response): Promise<void> => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 
     const segments = paramPath.split('/').filter(Boolean);
     if (segments.length === 0) {
-      res.status(400).json({ error: 'パスが指定されていません' });
+      res.status(400).json({ error: 'Path is required' });
       return;
     }
 

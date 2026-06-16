@@ -9,8 +9,8 @@ function normalizePath(p: string): string {
 
 /**
  * GET /api/components
- * specs/_components/ 直下 (非再帰) の .tsx / .jsx を走査し UserComponentFile[] を返す。
- * ディレクトリーが無ければ空配列。
+ * Scans the immediate children of specs/_components/ (non-recursive) for .tsx / .jsx files
+ * and returns UserComponentFile[]. Returns [] when the directory does not exist.
  */
 export function componentsRouter(specsDir: string): Router {
   const router = Router();
@@ -38,7 +38,7 @@ export function componentsRouter(specsDir: string): Router {
           source,
         });
       }
-      // 安定した順序にする (名前順)
+      // Sort into stable order (by name)
       files.sort((a, b) => a.path.localeCompare(b.path));
       res.json(files);
     } catch (err) {

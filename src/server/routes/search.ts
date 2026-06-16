@@ -1,6 +1,6 @@
 /**
  * GET /api/search?q=<query>&limit=<n=20>
- * クエリー解析・クランプはここで行い、検索ロジックは searchCore に委譲する。
+ * Query parsing and clamping happen here; search logic is delegated to searchCore.
  */
 
 import { Router, type Request, type Response } from 'express';

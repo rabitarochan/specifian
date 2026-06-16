@@ -1,4 +1,4 @@
-/** 新しいカテゴリーを作成するダイアログ */
+/** Dialog for creating a new category. */
 import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { createCategory } from '../api';
@@ -18,7 +18,7 @@ export function NewCategoryDialog({ onClose, onCreated }: Props) {
     e.preventDefault();
     const trimmed = path.trim().replace(/^\/+|\/+$/g, '');
     if (!trimmed) {
-      setError('カテゴリーのパスを入力してください。');
+      setError('Please enter a category path.');
       return;
     }
     setBusy(true);
@@ -29,20 +29,20 @@ export function NewCategoryDialog({ onClose, onCreated }: Props) {
     } catch (err) {
       const msg =
         err instanceof ApiHttpError && err.status === 409
-          ? 'そのカテゴリーは既に存在します。'
+          ? 'That category already exists.'
           : err instanceof Error
             ? err.message
-            : '作成に失敗しました。';
+            : 'Failed to create.';
       setError(msg);
       setBusy(false);
     }
   };
 
   return (
-    <Modal title="新しいカテゴリー" onClose={onClose}>
+    <Modal title="New Category" onClose={onClose}>
       <form onSubmit={submit} className="sb-form">
         <label className="sb-field">
-          <span className="sb-field__label">カテゴリーのパス</span>
+          <span className="sb-field__label">Category path</span>
           <input
             className="sb-input"
             value={path}
@@ -51,16 +51,16 @@ export function NewCategoryDialog({ onClose, onCreated }: Props) {
             autoFocus
           />
           <span className="sb-field__hint">
-            ネストする場合は <code>api/v1</code> のように <code>/</code> で区切ります。
+            Use <code>/</code> to nest, e.g. <code>api/v1</code>.
           </span>
         </label>
         {error && <p className="sb-form__error">{error}</p>}
         <div className="sb-form__actions">
           <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
-            キャンセル
+            Cancel
           </button>
           <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
-            作成
+            Create
           </button>
         </div>
       </form>

@@ -1,7 +1,7 @@
 /**
- * フォーム生成で扱う JSON Schema のサブセット (固定契約)。
- * yamlSync.ts / infer.ts / SchemaForm.tsx が共有する。
- * 未対応キーワードは無視して描画する (落とさない)。
+ * JSON Schema subset used for form generation (fixed contract).
+ * Shared by yamlSync.ts / infer.ts / SchemaForm.tsx.
+ * Unsupported keywords are silently ignored during rendering.
  */
 
 export type JsonSchemaType =
@@ -15,11 +15,11 @@ export type JsonSchemaType =
 
 export interface JsonSchema {
   type?: JsonSchemaType | JsonSchemaType[];
-  /** ラベルとして表示 */
+  /** Displayed as the field label */
   title?: string;
-  /** ヘルプ文として表示 */
+  /** Displayed as help text */
   description?: string;
-  /** string: select 化 */
+  /** string: renders as a select */
   enum?: unknown[];
   default?: unknown;
   /** object */
@@ -35,11 +35,11 @@ export interface JsonSchema {
   maximum?: number;
 }
 
-/** type が単一/配列/未指定のどれでも、主たる型を返す (不明は null) */
+/** Returns the primary type regardless of whether type is a single value, array, or absent (unknown → null). */
 export function primaryType(schema: JsonSchema): JsonSchemaType | null {
   const t = schema.type;
   if (!t) {
-    // type 未指定でも properties / items から推測する
+    // Even without type, infer from properties / items
     if (schema.properties) return 'object';
     if (schema.items) return 'array';
     if (schema.enum) return 'string';

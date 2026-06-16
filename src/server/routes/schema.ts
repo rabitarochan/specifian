@@ -5,9 +5,9 @@ import type { CategorySchemaResponse } from '../../shared/types.js';
 
 /**
  * GET /api/schema/<categoryPath>
- * categoryPath はネスト可能 (例: "tables", "api/v1", "")。
- * _schema.json が存在しない場合は { schema: null } を返す (404 にしない)。
- * パストラバーサル対策: resolve 後のパスが specsDir 配下でなければ 400。
+ * categoryPath can be nested (e.g. "tables", "api/v1", "").
+ * Returns { schema: null } when _schema.json does not exist (no 404).
+ * Path-traversal guard: returns 400 if the resolved path is outside specsDir.
  */
 export function schemaRouter(specsDir: string): Router {
   const router = Router();
@@ -20,7 +20,7 @@ export function schemaRouter(specsDir: string): Router {
     try {
       decoded = decodeURIComponent(rawPath);
     } catch {
-      res.status(400).json({ error: 'URLのデコードに失敗しました' });
+      res.status(400).json({ error: 'Failed to decode URL' });
       return;
     }
 
@@ -33,7 +33,7 @@ export function schemaRouter(specsDir: string): Router {
     const resolvedTarget = path.resolve(specsDir, ...segments);
 
     if (!resolvedTarget.startsWith(resolvedSpecsDir + path.sep) && resolvedTarget !== resolvedSpecsDir) {
-      res.status(400).json({ error: 'パストラバーサルは許可されていません' });
+      res.status(400).json({ error: 'Path traversal is not allowed' });
       return;
     }
 

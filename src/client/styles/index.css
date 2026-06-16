@@ -1,4 +1,4 @@
-/* specifian クライアント スタイル — ライトテーマ / アクセント 1 色 (indigo) */
+/* specifian client styles — light theme / single accent color (indigo) */
 
 :root {
   --accent: #4f46e5;
@@ -51,7 +51,7 @@ a:hover {
   text-decoration: underline;
 }
 
-/* ===== レイアウト ===== */
+/* ===== Layout ===== */
 .sb-app {
   display: flex;
   height: 100%;
@@ -63,7 +63,7 @@ a:hover {
   height: 100%;
 }
 
-/* ===== サイドバー ===== */
+/* ===== Sidebar ===== */
 .sb-sidebar {
   width: var(--sidebar-w);
   flex-shrink: 0;
@@ -119,7 +119,7 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* ===== ツリー ===== */
+/* ===== Tree ===== */
 .sb-tree,
 .sb-tree__children {
   list-style: none;
@@ -191,7 +191,7 @@ a:hover {
   font-size: 13px;
 }
 
-/* ===== ボタン / 入力 ===== */
+/* ===== Buttons / Inputs ===== */
 .sb-btn {
   font: inherit;
   font-size: 13.5px;
@@ -260,7 +260,7 @@ a:hover {
   box-shadow: 0 0 0 3px var(--accent-weak);
 }
 
-/* ===== コンテンツ / ページバー ===== */
+/* ===== Content / Page bar ===== */
 .sb-content {
   max-width: var(--content-w);
   margin: 0 auto;
@@ -324,7 +324,7 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* ===== スペックページ / スプリット ===== */
+/* ===== Spec page / Split ===== */
 .sb-spec-page,
 .sb-graph-page {
   display: flex;
@@ -355,7 +355,7 @@ a:hover {
   overflow-y: auto;
 }
 
-/* ===== バナー ===== */
+/* ===== Banner ===== */
 .sb-banner {
   background: #fffbeb;
   border-bottom: 1px solid #fde68a;
@@ -364,7 +364,7 @@ a:hover {
   font-size: 13.5px;
 }
 
-/* ===== トースト ===== */
+/* ===== Toast ===== */
 .sb-toasts {
   position: fixed;
   right: 20px;
@@ -390,7 +390,7 @@ a:hover {
   }
 }
 
-/* ===== モーダル ===== */
+/* ===== Modal ===== */
 .sb-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -425,7 +425,7 @@ a:hover {
   padding: 18px;
 }
 
-/* ===== フォーム ===== */
+/* ===== Form ===== */
 .sb-form {
   display: flex;
   flex-direction: column;
@@ -456,7 +456,7 @@ a:hover {
   margin-top: 4px;
 }
 
-/* ===== カード一覧 ===== */
+/* ===== Card list ===== */
 .sb-card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -490,7 +490,7 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* ===== ローディング / エラー ===== */
+/* ===== Loading / Error ===== */
 .sb-loading {
   padding: 40px;
   color: var(--text-muted);
@@ -533,7 +533,7 @@ a:hover {
   font-family: var(--mono);
 }
 
-/* ===== Warning ボックス ===== */
+/* ===== Warning box ===== */
 .sb-warning {
   border: 1px solid #fde68a;
   background: #fffbeb;
@@ -547,7 +547,7 @@ a:hover {
   margin-bottom: 4px;
 }
 
-/* ===== prose (Markdown 本文) ===== */
+/* ===== prose (Markdown body) ===== */
 .sb-prose {
   line-height: 1.8;
 }
@@ -688,7 +688,7 @@ a:hover {
   max-width: 100%;
 }
 
-/* ===== wiki リンク ===== */
+/* ===== wiki link ===== */
 .sb-wikilink {
   color: var(--accent);
   border-bottom: 1px solid transparent;
@@ -819,7 +819,7 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* ===== サイドバー 検索ボタン ===== */
+/* ===== Sidebar search button ===== */
 .sb-search-btn {
   font: inherit;
   display: flex;
@@ -859,7 +859,7 @@ a:hover {
   line-height: 1.4;
 }
 
-/* ===== コマンドパレット ===== */
+/* ===== Command palette ===== */
 .sb-palette-backdrop {
   position: fixed;
   inset: 0;
@@ -938,7 +938,7 @@ a:hover {
   margin-top: 2px;
 }
 
-/* ===== スキーマ違反バッジ / バナー ===== */
+/* ===== Schema violation badge / banner ===== */
 .sb-issue-badge {
   margin-left: 6px;
   font-size: 11px;
@@ -968,7 +968,7 @@ a:hover {
   font-size: 12px;
 }
 
-/* ===== グラフ ===== */
+/* ===== Graph ===== */
 .sb-graph-canvas {
   flex: 1;
   min-height: 0;
@@ -997,7 +997,7 @@ a:hover {
   transition: opacity 0.12s;
 }
 
-/* ===== グラフ: プレビューペイン (左グラフ / 右プレビューの横分割) ===== */
+/* ===== Graph: preview pane (horizontal split — graph left / preview right) ===== */
 .sb-graph-split {
   flex: 1;
   display: flex;
@@ -1042,7 +1042,7 @@ a:hover {
   padding: 24px 28px;
 }
 
-/* ===== 編集タブ (テキスト / フォーム) ===== */
+/* ===== Edit tabs (Text / Form) ===== */
 .sb-split__editor {
   flex-direction: column;
 }
@@ -1090,7 +1090,7 @@ a:hover {
   height: 100%;
 }
 
-/* ===== フォームペイン ===== */
+/* ===== Form pane ===== */
 .sb-form-pane {
   flex: 1;
   min-height: 0;
@@ -1103,7 +1103,7 @@ a:hover {
   gap: 16px;
 }
 
-/* フィールド共通 */
+/* Field common styles */
 .sb-schema-form .sb-field {
   display: flex;
   flex-direction: column;
@@ -1124,7 +1124,7 @@ a:hover {
   font-weight: 700;
 }
 
-/* チェックボックス行 */
+/* Checkbox row */
 .sb-field--inline .sb-checkbox-label {
   display: inline-flex;
   align-items: center;
@@ -1138,7 +1138,7 @@ a:hover {
   cursor: pointer;
 }
 
-/* ネスト fieldset (カード) */
+/* Nested fieldset (card) */
 .sb-fieldset {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1166,7 +1166,7 @@ a:hover {
   gap: 2px;
 }
 
-/* スキーマ外フィールド */
+/* Extra-schema fields */
 .sb-schema-extra {
   display: flex;
   flex-direction: column;
@@ -1183,7 +1183,7 @@ a:hover {
   color: var(--text-muted);
 }
 
-/* 行操作ボタン (静かなスタイル) */
+/* Row action buttons (quiet style) */
 .sb-row-btn {
   font: inherit;
   font-size: 12px;
@@ -1211,7 +1211,7 @@ a:hover {
   border-color: #fecaca;
 }
 
-/* スカラー配列 */
+/* Scalar array */
 .sb-scalar-array {
   display: flex;
   flex-direction: column;
@@ -1226,14 +1226,14 @@ a:hover {
   flex: 1;
 }
 
-/* オブジェクト配列 (fieldset リスト) */
+/* Object array (fieldset list) */
 .sb-object-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* ===== 編集テーブルウィジェット (主役) ===== */
+/* ===== Editable table widget (primary) ===== */
 .sb-table-widget {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1285,7 +1285,7 @@ a:hover {
   background: var(--bg-subtle);
 }
 
-/* コンパクトセル入力 (フォーカスまでボーダーレス) */
+/* Compact cell input (borderless until focused) */
 .sb-cell-input {
   font: inherit;
   font-size: 13px;
@@ -1313,7 +1313,7 @@ select.sb-cell-input {
   margin: 0 4px;
 }
 
-/* JSON フォールバック (読み取り専用) */
+/* JSON fallback (read-only) */
 .sb-json-fallback {
   font-family: var(--mono);
   font-size: 12px;
@@ -1327,7 +1327,7 @@ select.sb-cell-input {
   white-space: pre-wrap;
 }
 
-/* ===== Drawing (Excalidraw 埋め込み) ===== */
+/* ===== Drawing (Excalidraw embed) ===== */
 .sb-drawing {
   position: relative;
   margin: 1.2em 0;
@@ -1349,7 +1349,7 @@ select.sb-cell-input {
   color: var(--text-muted);
   font-size: 13px;
 }
-/* ホバーで現れる右上の編集ボタン */
+/* Edit button in the top-right that appears on hover */
 .sb-drawing__edit {
   position: absolute;
   top: 8px;
@@ -1372,7 +1372,7 @@ select.sb-cell-input {
 .sb-drawing__edit:hover {
   background: var(--bg-subtle);
 }
-/* 図がまだ無い場合のプレースホルダー */
+/* Placeholder shown when no drawing exists yet */
 .sb-drawing--missing {
   border-style: dashed;
   border-color: var(--border-strong);
@@ -1391,7 +1391,7 @@ select.sb-cell-input {
   font-size: 14px;
 }
 
-/* ===== Drawing エディターモーダル (フルスクリーン寄り) ===== */
+/* ===== Drawing editor modal (near-fullscreen) ===== */
 .sb-drawing-modal {
   display: flex;
   flex-direction: column;
@@ -1436,7 +1436,7 @@ select.sb-cell-input {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Excalidraw はサイズ指定済みの親コンテナーを必要とする */
+/* Excalidraw requires a sized parent container */
 .sb-drawing-modal__body {
   position: relative;
   flex: 1 1 auto;
@@ -1455,7 +1455,7 @@ select.sb-cell-input {
   font-size: 13px;
 }
 
-/* ===== スペック行 ⋯ ポップオーバーメニュー ===== */
+/* ===== Spec row ⋯ popover menu ===== */
 .sb-tree__spec {
   position: relative;
   display: flex;
@@ -1515,7 +1515,7 @@ select.sb-cell-input {
   background: var(--danger-weak);
 }
 
-/* ===== 危険ボタン バリアント ===== */
+/* ===== Danger button variant ===== */
 .sb-btn--danger {
   background: var(--danger);
   border-color: var(--danger);
@@ -1526,7 +1526,7 @@ select.sb-cell-input {
   border-color: #b91c1c;
 }
 
-/* ===== 削除ダイアログ: 参照警告ボックス ===== */
+/* ===== Delete dialog: reference warning box ===== */
 .sb-delete-warning {
   border: 1px solid #fde68a;
   background: #fffbeb;
@@ -1548,7 +1548,7 @@ select.sb-cell-input {
   gap: 4px;
 }
 
-/* ===== 保存 issues バナー (閉じるボタン付き) ===== */
+/* ===== Save issues banner (with close button) ===== */
 .sb-save-issues-banner__head {
   display: flex;
   align-items: center;

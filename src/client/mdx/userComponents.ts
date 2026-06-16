@@ -1,14 +1,15 @@
 /**
- * ユーザー定義コンポーネント (specs/_components/*.tsx|jsx) のランタイムコンパイラー。
+ * Runtime compiler for user-defined components (specs/_components/*.tsx|jsx).
  *
- * - GET /api/components で UserComponentFile[] を取得
- * - 各ファイルを sucrase (dynamic import でメインバンドルから分離) で
- *   TSX/JSX → CJS に変換 (classic runtime, React.createElement)
- * - new Function('require','module','exports', code) で実行
- * - require シムは 'react' のみ解決し、それ以外の import は明確なエラーを投げる
- * - export を収集: 名前付き export のうち関数かつ先頭大文字のもの + default export (ファイル名の PascalCase)
- * - 1 ファイルの失敗は他に波及させない (errors にまとめる)
- * - 結果はキャッシュし、invalidate() で破棄できる
+ * - Fetches UserComponentFile[] from GET /api/components
+ * - Transforms each file from TSX/JSX → CJS using sucrase
+ *   (split from the main bundle via dynamic import; classic runtime, React.createElement)
+ * - Executes via new Function('require','module','exports', code)
+ * - require shim resolves 'react' only; any other import throws a clear error
+ * - Collects exports: named exports that are functions starting with an uppercase letter,
+ *   plus default export (keyed by the filename in PascalCase)
+ * - Failure in one file does not affect others (errors are aggregated)
+ * - Results are cached and can be cleared with invalidate()
  */
 import * as React from 'react';
 import type { ComponentType } from 'react';
@@ -20,19 +21,19 @@ export interface UserComponentsResult {
 }
 
 /**
- * require シム用の React 値。
- * `import * as React from 'react'` も `import React from 'react'` も解決できるよう、
- * React 名前空間そのものに加えて `default` プロパティとして自身を持たせる。
- * sucrase の imports interop は `.default` / 名前付きプロパティの両方を参照しうる。
+ * React value used by the require shim.
+ * To support both `import * as React from 'react'` and `import React from 'react'`,
+ * the React namespace itself is spread and a `default` property pointing to itself is added.
+ * sucrase's imports interop may reference either `.default` or named properties.
  */
 const reactModule: Record<string, unknown> = { ...(React as object), default: React };
 
 function requireShim(id: string): unknown {
   if (id === 'react') return reactModule;
-  throw new Error(`_components では 'react' 以外の import は使えません: ${id}`);
+  throw new Error(`_components may only import 'react': ${id}`);
 }
 
-/** "StatusBadge.tsx" -> "StatusBadge"。ハイフン/アンダースコア区切りも PascalCase 化する */
+/** "StatusBadge.tsx" → "StatusBadge". Also PascalCases hyphen/underscore-delimited names. */
 function pascalCaseFromFilename(filePath: string): string {
   const base = filePath.split('/').pop() ?? filePath;
   const name = base.replace(/\.(tsx|jsx)$/i, '');
@@ -67,7 +68,7 @@ async function compileFile(
     const exports = moduleObj.exports;
     const collected: Record<string, ComponentType<unknown>> = {};
 
-    // 名前付き export: 関数かつ先頭が大文字のもの (default は別扱い)
+    // Named exports: functions whose name starts with an uppercase letter (default is handled separately)
     for (const [name, value] of Object.entries(exports)) {
       if (name === 'default') continue;
       if (name === '__esModule') continue;
@@ -77,7 +78,7 @@ async function compileFile(
       }
     }
 
-    // default export → ファイル名の PascalCase
+    // default export → keyed by filename in PascalCase
     const def = exports['default'];
     if (isComponentValue(def)) {
       collected[pascalCaseFromFilename(file.path)] = def;
@@ -95,7 +96,7 @@ let cache: Promise<UserComponentsResult> | null = null;
 async function fetchComponentFiles(): Promise<UserComponentFile[]> {
   const res = await fetch('/api/components');
   if (!res.ok) {
-    throw new Error(`GET /api/components が失敗しました (${res.status})`);
+    throw new Error(`GET /api/components failed (${res.status})`);
   }
   return (await res.json()) as UserComponentFile[];
 }
@@ -113,20 +114,20 @@ async function build(): Promise<UserComponentsResult> {
       errors.push({ path: file.path, message: result.error });
       continue;
     }
-    // 後勝ち (ファイル名順なので決定的)
+    // Last write wins (deterministic because files are in filename order)
     Object.assign(components, result.components);
   }
 
   return { components, errors };
 }
 
-/** ユーザー定義コンポーネントを取得・コンパイルする (キャッシュあり) */
+/** Fetches and compiles user-defined components (with caching). */
 export function loadUserComponents(): Promise<UserComponentsResult> {
   if (!cache) cache = build();
   return cache;
 }
 
-/** キャッシュを破棄する (ファイル変更時に呼び出して再コンパイルさせる) */
+/** Clears the cache (call when a file changes to trigger recompilation). */
 export function invalidateUserComponents(): void {
   cache = null;
 }

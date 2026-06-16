@@ -1,6 +1,6 @@
 /**
- * rename.ts — POST /api/rename (スペックリネーム) & GET /api/refs (参照元検索)
- * DESIGN.md「v5 機能設計」参照。本体ロジックは ../specOps.ts
+ * rename.ts — POST /api/rename (spec rename) & GET /api/refs (back-reference lookup)
+ * See DESIGN.md "v5 feature design". Core logic lives in ../specOps.ts.
  */
 
 import { Router, type Request, type Response } from 'express';
@@ -14,13 +14,13 @@ export function renameRouter(specsDir: string): Router {
   router.post('/', async (req: Request, res: Response): Promise<void> => {
     const body = req.body as RenameSpecRequest;
 
-    // リクエストバリデーション
+    // Request validation
     if (typeof body.from !== 'string' || !body.from) {
-      res.status(400).json({ error: 'from は必須です' });
+      res.status(400).json({ error: 'from is required' });
       return;
     }
     if (typeof body.to !== 'string' || !body.to) {
-      res.status(400).json({ error: 'to は必須です' });
+      res.status(400).json({ error: 'to is required' });
       return;
     }
 
@@ -51,7 +51,7 @@ export function refsRouter(specsDir: string): Router {
     const id = req.query['id'];
 
     if (typeof id !== 'string' || !id) {
-      res.status(400).json({ error: 'id クエリパラメーターは必須です' });
+      res.status(400).json({ error: 'id query parameter is required' });
       return;
     }
 

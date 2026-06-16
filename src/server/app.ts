@@ -68,7 +68,7 @@ export function createServer(options: ServerOptions): SpecifianServer {
       res
         .status(503)
         .send(
-          'クライアントのビルドが見つかりません。npm run build を実行してください。',
+          'Client build not found. Please run npm run build.',
         );
     }
   });

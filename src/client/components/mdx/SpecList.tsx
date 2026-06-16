@@ -1,7 +1,7 @@
 /**
- * カテゴリー内スペックの一覧をリンクカードで表示する。
- * specs / 既定カテゴリーは MDX scope ではなく MdxContext から取得する。
- * インデックス (_) とテンプレート (_template) は除外する。
+ * Displays a list of specs in a category as link cards.
+ * specs / default category are taken from MdxContext rather than MDX scope.
+ * The index (_) and template (_template) specs are excluded.
  */
 import { Link } from 'react-router-dom';
 import { specRoute } from '@shared/types';
@@ -16,7 +16,7 @@ export function SpecList({ category }: { category?: string }) {
   );
 
   if (items.length === 0) {
-    return <p className="sb-empty">このカテゴリーにはまだスペックがありません。</p>;
+    return <p className="sb-empty">No specs in this category yet.</p>;
   }
 
   return (

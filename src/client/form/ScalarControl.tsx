@@ -1,9 +1,9 @@
 /**
- * スカラー値 (string/number/integer/boolean、enum 含む) の入力コントロール。
- * フォームのフィールドとテーブルセルの両方から使う。
+ * Input control for scalar values (string/number/integer/boolean, including enum).
+ * Used for both form fields and table cells.
  *
- * value === undefined はキー未設定を表す。空入力に戻すと onChange(undefined) を呼び、
- * 呼び出し側がキーを削除する。boolean の false は明示値として保持する。
+ * value === undefined means the key is unset. Clearing the input calls onChange(undefined),
+ * and the caller removes the key. boolean false is kept as an explicit value.
  */
 import type { JsonSchema } from './schemaTypes';
 import { primaryType } from './schemaTypes';
@@ -11,11 +11,11 @@ import { primaryType } from './schemaTypes';
 interface Props {
   schema: JsonSchema;
   value: unknown;
-  /** undefined はキー削除を意味する */
+  /** undefined means delete the key */
   onChange: (next: unknown) => void;
-  /** 必須でない enum / select に空選択肢を出すか */
+  /** Whether to show an empty option for non-required enum / select */
   allowEmpty: boolean;
-  /** テーブルセル用のコンパクト表示 */
+  /** Compact display for table cells */
   compact?: boolean;
   ariaLabel?: string;
 }
@@ -45,7 +45,7 @@ export function ScalarControl({
             onChange(undefined);
             return;
           }
-          // enum の元の値 (型) を復元する
+          // Restore the original value (with its original type) from the enum
           const match = schema.enum?.find((opt) => String(opt) === raw);
           onChange(match ?? raw);
         }}
@@ -99,7 +99,7 @@ export function ScalarControl({
     );
   }
 
-  // string (および未知のスカラー扱い)
+  // string (and unknown scalar fallback)
   const current = value === undefined || value === null ? '' : String(value);
   return (
     <input

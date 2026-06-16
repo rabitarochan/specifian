@@ -39,7 +39,7 @@ export async function initSpecs(targetDir: string): Promise<void> {
     const empty = await isDirEmpty(targetDir);
     if (!empty) {
       throw new Error(
-        `"${targetDir}" は既に存在し、空ではありません。\n別のディレクトリーを指定するか、手動で削除してください。`,
+        `"${targetDir}" already exists and is not empty.\nSpecify a different directory or remove it manually.`,
       );
     }
   }
@@ -52,8 +52,8 @@ export async function initSpecs(targetDir: string): Promise<void> {
     await fs.access(examplesDir);
   } catch {
     throw new Error(
-      `サンプルディレクトリーが見つかりません: ${examplesDir}\n` +
-        `ビルドが完了しているか確認してください。`,
+      `Examples directory not found: ${examplesDir}\n` +
+        `Please make sure the package has been built.`,
     );
   }
 

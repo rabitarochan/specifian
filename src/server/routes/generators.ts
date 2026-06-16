@@ -26,7 +26,7 @@ export function generateRouter(specsDir: string): Router {
   router.post('/', async (req: Request, res: Response) => {
     const body = req.body as GenerateRequest;
     if (!body.generator) {
-      res.status(400).json({ error: 'generator は必須です' });
+      res.status(400).json({ error: 'generator is required' });
       return;
     }
 

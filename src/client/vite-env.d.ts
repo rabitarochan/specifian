@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
 
-// Excalidraw の CSS エントリーは exports に types を持たないため、
-// 副作用 import 用に空モジュールとして宣言する (Vite が実体を処理する)。
+// The Excalidraw CSS entry has no types in exports,
+// so declare it as an empty module for side-effect imports (Vite handles the actual content).
 declare module '@excalidraw/excalidraw/index.css';

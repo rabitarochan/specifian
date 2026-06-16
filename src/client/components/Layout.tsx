@@ -1,4 +1,4 @@
-/** 全体レイアウト: 固定左サイドバー + 右コンテンツ領域 (Outlet) */
+/** Overall layout: fixed left sidebar + right content area (Outlet). */
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 

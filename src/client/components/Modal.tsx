@@ -1,4 +1,4 @@
-/** 汎用モーダルダイアログ。Escape / 背景クリック / キャンセルで閉じる */
+/** Generic modal dialog. Closes on Escape, backdrop click, or Cancel. */
 import { useEffect, type ReactNode } from 'react';
 
 interface Props {
@@ -27,7 +27,7 @@ export function Modal({ title, onClose, children }: Props) {
       >
         <div className="sb-modal__head">
           <h2 className="sb-modal__title">{title}</h2>
-          <button className="sb-icon-btn" onClick={onClose} aria-label="閉じる">
+          <button className="sb-icon-btn" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>

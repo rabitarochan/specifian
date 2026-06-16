@@ -8,9 +8,9 @@ function normalizePath(p: string): string {
 }
 
 /**
- * パストラバーサルガード。
- * decoded なパス文字列を specsDir 配下に解決し、
- * specsDir の外を指す場合は null を返す。
+ * Path traversal guard.
+ * Resolves a decoded path string under specsDir and returns null
+ * if it points outside specsDir.
  */
 function resolveGuarded(specsDir: string, relPath: string): string | null {
   const resolvedSpecsDir = path.resolve(specsDir);
@@ -25,8 +25,8 @@ function resolveGuarded(specsDir: string, relPath: string): string | null {
 }
 
 /**
- * specsDir 配下を再帰走査して *.excalidraw ファイルを列挙する。
- * ドットディレクトリー (例: .git) と node_modules は除外。
+ * Recursively scan specsDir for *.excalidraw files.
+ * Dot-directories (e.g. .git) and node_modules are excluded.
  */
 async function scanExcalidraw(specsDir: string, dir: string): Promise<DrawingMeta[]> {
   let entries;
@@ -55,26 +55,26 @@ async function scanExcalidraw(specsDir: string, dir: string): Promise<DrawingMet
 }
 
 /**
- * /api/drawings ルーター
+ * /api/drawings router
  *
- * GET /               → DrawingMeta[] (specsDir 配下の全 .excalidraw、パスは specsDir 相対 "/" 区切り)
- * GET /<path>         → シーン JSON (404 if missing)。<path> は拡張子なし
- * PUT /<path>         → body = シーン JSON を保存 (新規作成可、親ディレクトリーは存在必須)
+ * GET /               → DrawingMeta[] (all .excalidraw files under specsDir, paths relative to specsDir with "/" separators)
+ * GET /<path>         → scene JSON (404 if missing); <path> is without extension
+ * PUT /<path>         → save body as scene JSON (new files allowed; parent directory must exist)
  *
- * express.json({ limit: '20mb' }) をルーターレベルで適用。
- * Excalidraw シーンは大きくなり得るためアプリ全体の 100 kb 制限を回避する。
+ * express.json({ limit: '20mb' }) is applied at router level.
+ * Excalidraw scenes can be large, so this overrides the app-wide 100 kb limit.
  */
 export function drawingsRouter(specsDir: string): Router {
   const router = Router();
 
-  // ルーターレベルの body-limit を上書き (シーン JSON は大きい)
+  // Override body-limit at router level (scene JSON can be large)
   router.use(json({ limit: '20mb' }));
 
-  // ─── GET / (一覧) ────────────────────────────────────────────────
+  // ─── GET / (list) ────────────────────────────────────────────────
   router.get('/', async (_req: Request, res: Response): Promise<void> => {
     try {
       const drawings = await scanExcalidraw(specsDir, specsDir);
-      // 安定したアルファベット順にソート
+      // Sort into stable alphabetical order
       drawings.sort((a, b) => a.path.localeCompare(b.path));
       res.json(drawings);
     } catch (err) {
@@ -82,28 +82,28 @@ export function drawingsRouter(specsDir: string): Router {
     }
   });
 
-  // ─── GET /<path> (1 件取得) ───────────────────────────────────────
+  // ─── GET /<path> (single item) ───────────────────────────────────
   router.get(/^\/.+$/, async (req: Request, res: Response): Promise<void> => {
     let decoded: string;
     try {
       decoded = decodeURIComponent(req.path);
     } catch {
-      res.status(400).json({ error: 'URLのデコードに失敗しました' });
+      res.status(400).json({ error: 'Failed to decode URL' });
       return;
     }
 
-    // 先頭スラッシュを除去
+    // Strip leading slash
     const relPath = decoded.replace(/^\//, '');
 
     if (!relPath) {
-      res.status(400).json({ error: 'パスが空です' });
+      res.status(400).json({ error: 'Path is empty' });
       return;
     }
 
-    // パストラバーサルガード
+    // Path traversal guard
     const resolved = resolveGuarded(specsDir, relPath);
     if (resolved === null) {
-      res.status(400).json({ error: 'パストラバーサルは許可されていません' });
+      res.status(400).json({ error: 'Path traversal is not allowed' });
       return;
     }
 
@@ -115,7 +115,7 @@ export function drawingsRouter(specsDir: string): Router {
     } catch (err) {
       const e = err as NodeJS.ErrnoException;
       if (e.code === 'ENOENT') {
-        res.status(404).json({ error: '図が見つかりません' });
+        res.status(404).json({ error: 'Drawing not found' });
         return;
       }
       res.status(500).json({ error: String(err) });
@@ -125,46 +125,46 @@ export function drawingsRouter(specsDir: string): Router {
     res.type('application/json').send(raw);
   });
 
-  // ─── PUT /<path> (保存) ──────────────────────────────────────────
+  // ─── PUT /<path> (save) ──────────────────────────────────────────
   router.put(/^\/.+$/, async (req: Request, res: Response): Promise<void> => {
     let decoded: string;
     try {
       decoded = decodeURIComponent(req.path);
     } catch {
-      res.status(400).json({ error: 'URLのデコードに失敗しました' });
+      res.status(400).json({ error: 'Failed to decode URL' });
       return;
     }
 
-    // 先頭スラッシュを除去
+    // Strip leading slash
     const relPath = decoded.replace(/^\//, '');
 
     if (!relPath) {
-      res.status(400).json({ error: 'パスが空です' });
+      res.status(400).json({ error: 'Path is empty' });
       return;
     }
 
-    // パストラバーサルガード
+    // Path traversal guard
     const resolved = resolveGuarded(specsDir, relPath);
     if (resolved === null) {
-      res.status(400).json({ error: 'パストラバーサルは許可されていません' });
+      res.status(400).json({ error: 'Path traversal is not allowed' });
       return;
     }
 
-    // ボディ検証: non-null なオブジェクトであること
+    // Body validation: must be a non-null object
     const body = req.body as unknown;
     if (body === null || typeof body !== 'object' || Array.isArray(body)) {
-      res.status(400).json({ error: 'リクエストボディは JSON オブジェクトである必要があります' });
+      res.status(400).json({ error: 'Request body must be a JSON object' });
       return;
     }
 
     const filePath = resolved + '.excalidraw';
 
-    // 親ディレクトリーの存在確認 (mkdir しない — 図はスペックの隣に置く)
+    // Verify parent directory exists (we do not mkdir — drawings live next to specs)
     const parentDir = path.dirname(filePath);
     try {
       await fs.access(parentDir);
     } catch {
-      res.status(400).json({ error: `親ディレクトリーが存在しません: ${normalizePath(path.relative(specsDir, parentDir))}` });
+      res.status(400).json({ error: `Parent directory does not exist: ${normalizePath(path.relative(specsDir, parentDir))}` });
       return;
     }
 

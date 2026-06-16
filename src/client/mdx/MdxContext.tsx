@@ -1,6 +1,6 @@
 /**
- * 描画中の MDX へ specs / category を供給する React コンテキスト。
- * SpecList などの組み込みコンポーネントが MDX scope ではなくここから値を読む。
+ * React context that supplies specs / category to the MDX being rendered.
+ * Built-in components such as SpecList read values from here rather than from MDX scope.
  */
 import { createContext, useContext } from 'react';
 import type { SpecMeta } from '@shared/types';
@@ -9,8 +9,9 @@ export interface MdxContextValue {
   specs: SpecMeta[];
   category: string;
   /**
-   * wiki リンクのクリックを通常遷移の代わりに処理するハンドラー。
-   * グラフのプレビューペインなど、リンク先をその場で表示したい文脈で指定する。
+   * Handler that processes wiki link clicks instead of normal navigation.
+   * Specify this in contexts where the link target should be displayed in-place,
+   * such as the graph preview pane.
    */
   onWikiNavigate?: (id: string) => void;
 }

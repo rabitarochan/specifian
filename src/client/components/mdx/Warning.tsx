@@ -1,4 +1,4 @@
-/** 組み込みコンポーネントがデータ不正時に表示する注意ボックス */
+/** Warning box displayed by built-in components when data is invalid. */
 import type { ReactNode } from 'react';
 
 export function Warning({ title, children }: { title?: string; children: ReactNode }) {

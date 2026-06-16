@@ -1,10 +1,10 @@
 /**
- * リンクグラフ。GET /api/graph を d3-force でレイアウトし SVG 描画する。
+ * Link graph. Fetches GET /api/graph and lays it out with d3-force, rendered as SVG.
  * - forceLink / forceManyBody / forceCenter / forceCollide
- * - カテゴリー別に色分け、missing ノードはグレー破線
- * - クリックで右ペインにプレビュー、ホバーで近傍ハイライト (他をディム)
- * - ホイールズーム + 背景ドラッグでパン (viewBox 変換、d3-zoom 不使用)
- * - ノードドラッグで再配置 (ドラッグ時はクリック扱いしない)
+ * - Color-coded by category; missing nodes are shown with a grey dashed border
+ * - Click to preview in right pane; hover to highlight neighbors (others dimmed)
+ * - Wheel zoom + background drag to pan (viewBox transform, no d3-zoom)
+ * - Node drag to reposition (drag does not trigger click navigation)
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -38,7 +38,7 @@ export function GraphPage() {
   const [graph, setGraph] = useState<Graph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, forceRender] = useState(0);
-  // 選択中のノード ID (右ペインのプレビュー対象)。null なら全幅表示
+  // ID of the selected node (shown in the right preview pane). null = full-width
   const [selected, setSelected] = useState<string | null>(null);
 
   const nodesRef = useRef<SimNode[]>([]);
@@ -46,7 +46,7 @@ export function GraphPage() {
   const simRef = useRef<Simulation<SimNode, SimLink> | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // viewBox (パン/ズーム)
+  // viewBox (pan/zoom)
   const [view, setView] = useState({ x: 0, y: 0, w: WIDTH, h: HEIGHT });
   const [hovered, setHovered] = useState<string | null>(null);
   const dragState = useRef<
@@ -54,7 +54,7 @@ export function GraphPage() {
     | { kind: 'node'; node: SimNode }
     | null
   >(null);
-  // ノードドラッグ判定: pointerdown 位置と、閾値を超えて動いたか
+  // Node drag detection: pointerdown position and whether movement exceeded the threshold
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
   const movedRef = useRef(false);
 
@@ -66,14 +66,14 @@ export function GraphPage() {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        setError(err instanceof ApiHttpError ? err.message : 'グラフの取得に失敗しました。');
+        setError(err instanceof ApiHttpError ? err.message : 'Failed to load graph.');
       });
     return () => {
       active = false;
     };
   }, []);
 
-  // シミュレーション構築
+  // Build simulation
   useEffect(() => {
     if (!graph) return;
     const nodes: SimNode[] = graph.nodes.map((n: GraphNode) => ({
@@ -113,7 +113,7 @@ export function GraphPage() {
     };
   }, [graph]);
 
-  // Escape でプレビューを閉じる
+  // Close preview on Escape
   useEffect(() => {
     if (selected === null) return;
     const onKey = (e: KeyboardEvent) => {
@@ -123,7 +123,7 @@ export function GraphPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [selected]);
 
-  // 近傍集合 (ハイライト用)。graph.edges から直接構築する。
+  // Neighbor set (for highlight). Built directly from graph.edges.
   const neighbors = useMemo(() => {
     const map = new Map<string, Set<string>>();
     if (!graph) return map;
@@ -139,12 +139,12 @@ export function GraphPage() {
   const isDimmed = (id: string): boolean => {
     if (!hovered) return false;
     if (id === hovered) return false;
-    // 選択中のノードはホバー時もディムしない (常に全不透明)
+    // Never dim the selected node (always fully opaque)
     if (id === selected) return false;
     return !neighbors.get(hovered)?.has(id);
   };
 
-  // 座標 → SVG ユーザー座標へ変換
+  // Convert client coordinates to SVG user coordinates
   const toUser = useCallback(
     (clientX: number, clientY: number): { x: number; y: number } => {
       const svg = svgRef.current;
@@ -164,7 +164,7 @@ export function GraphPage() {
     setView((v) => {
       const w = v.w * factor;
       const h = v.h * factor;
-      // フォーカス点を保持してズーム
+      // Zoom while keeping the focal point fixed
       return {
         w,
         h,
@@ -183,7 +183,7 @@ export function GraphPage() {
     e.stopPropagation();
     (e.target as Element).setPointerCapture?.(e.pointerId);
     dragState.current = { kind: 'node', node };
-    // ドラッグ判定をリセットし、開始位置を記録する
+    // Reset drag detection and record the start position
     pointerStart.current = { x: e.clientX, y: e.clientY };
     movedRef.current = false;
     simRef.current?.alphaTarget(0.3).restart();
@@ -202,7 +202,7 @@ export function GraphPage() {
       const dy = ((e.clientY - ds.startY) / rect.height) * ds.origin.h;
       setView({ ...ds.origin, x: ds.origin.x - dx, y: ds.origin.y - dy });
     } else {
-      // 累積移動距離が閾値 (約 5px) を超えたらドラッグとみなし、クリック遷移を抑止する
+      // Treat as drag (suppress click) once cumulative movement exceeds ~5px threshold
       const start = pointerStart.current;
       if (start && !movedRef.current) {
         const dx = e.clientX - start.x;
@@ -229,14 +229,14 @@ export function GraphPage() {
     return (
       <article className="sb-content">
         <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">グラフエラー</div>
+          <div className="sb-error-panel__title">Graph Error</div>
           <div className="sb-error-panel__message">{error}</div>
         </div>
       </article>
     );
   }
 
-  if (!graph) return <div className="sb-loading">読み込み中…</div>;
+  if (!graph) return <div className="sb-loading">Loading…</div>;
 
   const nodes = nodesRef.current;
   const links = linksRef.current;
@@ -244,10 +244,10 @@ export function GraphPage() {
   return (
     <div className="sb-graph-page">
       <header className="sb-page-bar">
-        <h1 className="sb-page-bar__title">リンクグラフ</h1>
+        <h1 className="sb-page-bar__title">Link Graph</h1>
         <span className="sb-graph-hint">
-          クリックでプレビュー / ドラッグでノード移動 / 背景ドラッグでパン /
-          ホイールでズーム
+          Click to preview / Drag node to reposition / Drag background to pan /
+          Scroll to zoom
         </span>
       </header>
       <div className="sb-graph-split">
@@ -296,7 +296,7 @@ export function GraphPage() {
                   onMouseEnter={() => setHovered(n.id)}
                   onMouseLeave={() => setHovered(null)}
                   onClick={() => {
-                    // ドラッグ直後のクリックは無視する
+                    // Ignore clicks immediately after a drag
                     if (movedRef.current) return;
                     if (!n.missing) setSelected(n.id);
                   }}

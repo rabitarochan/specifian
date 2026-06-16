@@ -1,22 +1,22 @@
 /**
- * infer.ts — front-matter データから JSON Schema サブセットを推論する
+ * infer.ts — infers a JSON Schema subset from front-matter data
  *
- * ブラウザで動作する純粋関数。副作用なし、例外を投げない。
+ * Pure functions that run in the browser. No side effects, no exceptions thrown.
  */
 
 import type { JsonSchema } from './schemaTypes';
 
 /**
- * 単一の値から JsonSchema を推論する。
+ * Infers a JsonSchema from a single value.
  * - string   → { type: 'string' }
  * - number   → Number.isInteger → { type: 'integer' } else { type: 'number' }
  * - boolean  → { type: 'boolean' }
- * - array    → { type: 'array', items: <推論> }
- *               空配列 → items: { type: 'string' }
- *               要素が全てオブジェクト → 全要素のキーをマージして items を作成
- *               その他 → 最初の要素から推論
- * - plain object → { type: 'object', properties: { ... } } (再帰)
- * - null / undefined / その他 → { type: 'string' }
+ * - array    → { type: 'array', items: <inferred> }
+ *               empty array → items: { type: 'string' }
+ *               all elements are objects → merge keys from all elements to build items
+ *               otherwise → infer from the first element
+ * - plain object → { type: 'object', properties: { ... } } (recursive)
+ * - null / undefined / other → { type: 'string' }
  */
 function inferValue(value: unknown): JsonSchema {
   if (value === null || value === undefined) {
@@ -40,7 +40,7 @@ function inferValue(value: unknown): JsonSchema {
       return { type: 'array', items: { type: 'string' } };
     }
 
-    // 全要素がプレーンオブジェクト (null でも配列でもない) なら全キーをマージ
+    // If every element is a plain object (not null, not array), merge all keys
     const allObjects = value.every(
       (el) => el !== null && typeof el === 'object' && !Array.isArray(el),
     );
@@ -59,20 +59,20 @@ function inferValue(value: unknown): JsonSchema {
       };
     }
 
-    // それ以外: 最初の要素から推論
+    // Otherwise: infer from the first element
     return { type: 'array', items: inferValue(value[0]) };
   }
 
   if (typeof value === 'object' && !Array.isArray(value)) {
-    // プレーンオブジェクト
+    // Plain object
     return inferObject(value as Record<string, unknown>);
   }
 
-  // その他 (function, symbol, bigint など)
+  // Other (function, symbol, bigint, etc.)
   return { type: 'string' };
 }
 
-/** Record<string, unknown> から { type: 'object', properties: {...} } を作成 */
+/** Creates { type: 'object', properties: {...} } from a Record<string, unknown>. */
 function inferObject(data: Record<string, unknown>): JsonSchema {
   const properties: Record<string, JsonSchema> = {};
   for (const [key, val] of Object.entries(data)) {
@@ -82,9 +82,9 @@ function inferObject(data: Record<string, unknown>): JsonSchema {
 }
 
 /**
- * front-matter データ全体から JSON Schema を推論する。
- * 返り値は常に { type: 'object', properties: {...} }。
- * 決して例外を投げない。
+ * Infers a JSON Schema from the complete front-matter data.
+ * Always returns { type: 'object', properties: {...} }.
+ * Never throws.
  */
 export function inferSchema(data: Record<string, unknown>): JsonSchema {
   return inferObject(data);

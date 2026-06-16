@@ -13,41 +13,41 @@ const VERSION = '0.1.0';
 program
   .name('specifian')
   .version(VERSION)
-  .description('Storybook ライクな MDX スペック管理ツール');
+  .description('A Storybook-like MDX spec management tool');
 
 // serve command (default)
 program
   .command('serve', { isDefault: true })
-  .description('スペックサーバーを起動します')
-  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
-  .option('--port <port>', 'ポート番号', '4400')
-  .option('--open', 'ブラウザーを自動的に開く', false)
+  .description('Start the spec server')
+  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--port <port>', 'Port number', '4400')
+  .option('--open', 'Open browser automatically', false)
   .action(async (opts: { dir: string; port: string; open: boolean }) => {
     const specsDir = path.resolve(opts.dir);
     const port = parseInt(opts.port, 10);
 
     if (!fs.existsSync(specsDir)) {
       console.error(
-        `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+        `Error: Specs directory not found: ${specsDir}`,
       );
-      console.error('ヒント: specifian init --dir <ディレクトリー> で初期化できます。');
+      console.error('Hint: Run specifian init --dir <directory> to initialize.');
       process.exit(1);
     }
 
     console.log(`\n🗒  specifian v${VERSION}`);
-    console.log(`📂 スペックディレクトリー: ${specsDir}`);
-    console.log(`🚀 サーバーを起動しています... http://localhost:${port}\n`);
+    console.log(`📂 Specs directory: ${specsDir}`);
+    console.log(`🚀 Starting server... http://localhost:${port}\n`);
 
     try {
       await startServer({ specsDir, port });
-      console.log(`✅ サーバー起動完了: http://localhost:${port}`);
+      console.log(`✅ Server started: http://localhost:${port}`);
 
       if (opts.open) {
         const { default: open } = await import('open');
         await open(`http://localhost:${port}`);
       }
     } catch (err) {
-      console.error('サーバーの起動に失敗しました:', err);
+      console.error('Failed to start server:', err);
       process.exit(1);
     }
   });
@@ -55,18 +55,18 @@ program
 // init command
 program
   .command('init')
-  .description('サンプルスペックを使って初期化します')
-  .option('--dir <specsDir>', '初期化先ディレクトリー', './specs')
+  .description('Initialize with example specs')
+  .option('--dir <specsDir>', 'Target directory', './specs')
   .action(async (opts: { dir: string }) => {
     const targetDir = path.resolve(opts.dir);
-    console.log(`📂 初期化先: ${targetDir}`);
+    console.log(`📂 Target directory: ${targetDir}`);
     try {
       await initSpecs(targetDir);
-      console.log(`✅ 初期化完了: ${targetDir}`);
-      console.log('次のコマンドでサーバーを起動できます:');
+      console.log(`✅ Initialized: ${targetDir}`);
+      console.log('Start the server with:');
       console.log(`  specifian serve --dir ${opts.dir}`);
     } catch (err) {
-      console.error('初期化に失敗しました:', err instanceof Error ? err.message : err);
+      console.error('Initialization failed:', err instanceof Error ? err.message : err);
       process.exit(1);
     }
   });
@@ -74,10 +74,10 @@ program
 // generate command
 program
   .command('generate <generator>')
-  .description('コード生成テンプレートを実行します')
-  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
-  .option('--spec <specId>', '対象スペック ID (省略時は全スペック)')
-  .option('--out <outDir>', '出力先ディレクトリー', '.')
+  .description('Run a code generation template')
+  .option('--dir <specsDir>', 'Specs directory', './specs')
+  .option('--spec <specId>', 'Target spec ID (defaults to all specs)')
+  .option('--out <outDir>', 'Output directory', '.')
   .action(
     async (
       generator: string,
@@ -87,7 +87,7 @@ program
 
       if (!fs.existsSync(specsDir)) {
         console.error(
-          `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+          `Error: Specs directory not found: ${specsDir}`,
         );
         process.exit(1);
       }
@@ -103,16 +103,16 @@ program
         );
 
         if (files.length === 0) {
-          console.log('生成されたファイルはありません。');
+          console.log('No files generated.');
         } else {
-          console.log(`✅ ${files.length} 件のファイルを生成しました:`);
+          console.log(`✅ Generated ${files.length} file(s):`);
           for (const f of files) {
             console.log(`  ${f.path}`);
           }
         }
       } catch (err) {
         console.error(
-          'コード生成に失敗しました:',
+          'Code generation failed:',
           err instanceof Error ? err.message : err,
         );
         process.exit(1);
@@ -123,14 +123,14 @@ program
 // validate command
 program
   .command('validate')
-  .description('front-matter をスキーマに対してバリデーションします')
-  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
+  .description('Validate front-matter against schemas')
+  .option('--dir <specsDir>', 'Specs directory', './specs')
   .action(async (opts: { dir: string }) => {
     const specsDir = path.resolve(opts.dir);
 
     if (!fs.existsSync(specsDir)) {
       console.error(
-        `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+        `Error: Specs directory not found: ${specsDir}`,
       );
       process.exit(1);
     }
@@ -139,10 +139,10 @@ program
       const report = await validateSpecs(specsDir);
 
       if (report.issues.length === 0) {
-        console.log('✅ front-matter はすべてのスキーマに適合しています');
+        console.log('✅ All front-matter conforms to the schemas');
         process.exit(0);
       } else {
-        console.error(`❌ スキーマ違反が ${report.issues.length} 件見つかりました:`);
+        console.error(`❌ Found ${report.issues.length} schema violation(s):`);
         for (const issue of report.issues) {
           console.error(`  ${issue.specId} ${issue.path}: ${issue.message}`);
         }
@@ -150,7 +150,7 @@ program
       }
     } catch (err) {
       console.error(
-        'バリデーションに失敗しました:',
+        'Validation failed:',
         err instanceof Error ? err.message : err,
       );
       process.exit(1);
@@ -160,27 +160,27 @@ program
 // mcp command
 program
   .command('mcp')
-  .description('MCP サーバー (stdio) を起動します。AI エージェントがスペックを読み書きできます')
-  .option('--dir <specsDir>', 'スペックディレクトリー', './specs')
+  .description('Start the MCP server (stdio) — lets AI agents read and write specs')
+  .option('--dir <specsDir>', 'Specs directory', './specs')
   .action(async (opts: { dir: string }) => {
     const specsDir = path.resolve(opts.dir);
 
     if (!fs.existsSync(specsDir)) {
       console.error(
-        `エラー: スペックディレクトリーが見つかりません: ${specsDir}`,
+        `Error: Specs directory not found: ${specsDir}`,
       );
-      console.error('ヒント: specifian init --dir <ディレクトリー> で初期化できます。');
+      console.error('Hint: Run specifian init --dir <directory> to initialize.');
       process.exit(1);
     }
 
-    // 注意: stdout は MCP プロトコルが占有するため、起動通知は必ず stderr へ。
+    // Note: stdout is reserved for the MCP protocol — startup notices must go to stderr.
     console.error(`specifian MCP server (stdio) — specs: ${specsDir}`);
 
     try {
       await startMcpServer(specsDir);
     } catch (err) {
       console.error(
-        'MCP サーバーの起動に失敗しました:',
+        'Failed to start MCP server:',
         err instanceof Error ? err.message : err,
       );
       process.exit(1);

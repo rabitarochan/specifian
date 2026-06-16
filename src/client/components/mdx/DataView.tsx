@@ -1,4 +1,4 @@
-/** オブジェクト/配列を折りたたみ可能な整形 JSON ビューで表示する */
+/** Displays an object or array as a collapsible, formatted JSON view. */
 
 function Primitive({ value }: { value: unknown }) {
   if (value === null) return <span className="sb-json-null">null</span>;
