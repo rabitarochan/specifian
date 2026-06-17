@@ -16,7 +16,7 @@ export function Editor({ value, onChange }: Props) {
       onChange={onChange}
       extensions={extensions}
       height="100%"
-      className="sb-editor"
+      className="h-full flex-1 text-[13.5px] [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto"
       basicSetup={{
         lineNumbers: true,
         highlightActiveLine: true,

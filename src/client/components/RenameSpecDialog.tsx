@@ -6,6 +6,9 @@ import { renameSpecId, ApiHttpError } from '../api';
 import { useSpecs } from './SpecsProvider';
 import { useToast } from './Toast';
 import { toSpecId, specRoute, parseSpecId } from '@shared/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Props {
   /** ID of the spec to rename ("category:slug") */
@@ -99,16 +102,20 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
 
   return (
     <Modal title="Rename Spec" onClose={onClose}>
-      <form onSubmit={submit} className="sb-form">
-        <div className="sb-field">
-          <span className="sb-field__label">Current ID</span>
-          <span className="sb-id-badge" style={{ alignSelf: 'flex-start' }}>{specId}</span>
+      <form onSubmit={submit} className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-semibold text-foreground">Current ID</span>
+          <span
+            className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-1.5 py-0.5 self-start"
+          >
+            {specId}
+          </span>
         </div>
 
-        <label className="sb-field">
-          <span className="sb-field__label">Category</span>
-          <input
-            className="sb-input"
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rename-category">Category</Label>
+          <Input
+            id="rename-category"
             list="rename-categories"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
@@ -121,30 +128,30 @@ export function RenameSpecDialog({ specId, onClose }: Props) {
               <option key={c} value={c} />
             ))}
           </datalist>
-        </label>
+        </div>
 
-        <label className="sb-field">
-          <span className="sb-field__label">Slug</span>
-          <input
-            className="sb-input"
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="rename-slug">Slug</Label>
+          <Input
+            id="rename-slug"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="users"
             pattern="[A-Za-z0-9_\-]+"
             disabled={busy}
           />
-          <span className="sb-field__hint">Alphanumeric, hyphens, and underscores only</span>
-        </label>
+          <span className="text-xs text-muted-foreground">Alphanumeric, hyphens, and underscores only</span>
+        </div>
 
-        {error && <p className="sb-form__error">{error}</p>}
+        {error && <p className="text-destructive text-[13px] m-0">{error}</p>}
 
-        <div className="sb-form__actions">
-          <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
+          </Button>
+          <Button type="submit" disabled={busy}>
             {busy ? 'Renaming…' : 'Rename'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

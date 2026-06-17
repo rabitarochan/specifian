@@ -10,6 +10,10 @@ import { useSpecs } from './SpecsProvider';
 import { useToast } from './Toast';
 import { saveCategorySettings, ApiHttpError } from '../api';
 import { PALETTE, hashCategoryColor } from '../pages/categoryColor';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 /** Curated, searchable subset of lucide icons offered in the picker. */
 const ICON_CHOICES: string[] = [
@@ -80,21 +84,19 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
 
   return (
     <Modal title={`Category settings — ${label}`} onClose={onClose}>
-      <form onSubmit={submit} className="sb-form">
+      <form onSubmit={submit} className="flex flex-col gap-3.5">
         {/* Preview */}
-        <div className="sb-field">
-          <span className="sb-field__label">Preview</span>
-          <div className="sb-cat-preview">
+        <div className="flex flex-col gap-1.5">
+          <Label>Preview</Label>
+          <div className="flex items-center gap-2 px-2.5 py-2 border border-border rounded-md bg-muted font-semibold">
             {icon ? (
               <DynamicIcon name={icon as IconName} size={18} color={effectiveColor} />
             ) : (
               <span
-                className="sb-cat-swatch"
+                className="inline-block rounded-full flex-shrink-0"
                 style={{
-                  display: 'inline-block',
                   width: 13,
                   height: 13,
-                  borderRadius: '50%',
                   background: effectiveColor,
                 }}
               />
@@ -104,16 +106,19 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
         </div>
 
         {/* Color */}
-        <div className="sb-field">
-          <span className="sb-field__label">Color</span>
-          <div className="sb-color-row">
+        <div className="flex flex-col gap-1.5">
+          <Label>Color</Label>
+          <div className="flex flex-wrap items-center gap-1.5">
             {PALETTE.map((c) => (
               <button
                 key={c}
                 type="button"
-                className={
-                  color === c ? 'sb-color-swatch sb-color-swatch--active' : 'sb-color-swatch'
-                }
+                className={cn(
+                  'w-[22px] h-[22px] rounded-full border-2 cursor-pointer p-0',
+                  color === c
+                    ? 'border-foreground shadow-[0_0_0_2px_var(--background)]'
+                    : 'border-transparent',
+                )}
                 style={{ background: c }}
                 title={c}
                 aria-label={c}
@@ -122,37 +127,42 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
             ))}
             <input
               type="color"
-              className="sb-color-custom"
+              className="w-7 h-7 p-0 border border-input rounded-md bg-background cursor-pointer"
               value={effectiveColor}
               title="Custom color"
               onChange={(e) => setColor(e.target.value)}
             />
-            <button
+            <Button
               type="button"
-              className="sb-btn sb-btn--ghost"
+              variant="ghost"
+              size="sm"
               onClick={() => setColor('')}
             >
               Default
-            </button>
+            </Button>
           </div>
-          <span className="sb-field__hint">
+          <span className="text-xs text-muted-foreground">
             Empty uses an auto color derived from the category name.
           </span>
         </div>
 
         {/* Icon */}
-        <div className="sb-field">
-          <span className="sb-field__label">Icon</span>
-          <input
-            className="sb-input"
+        <div className="flex flex-col gap-1.5">
+          <Label>Icon</Label>
+          <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filter icons…"
           />
-          <div className="sb-icon-grid">
+          <div className="grid grid-cols-8 gap-1 mt-2 max-h-[200px] overflow-y-auto p-0.5">
             <button
               type="button"
-              className={!icon ? 'sb-icon-cell sb-icon-cell--active' : 'sb-icon-cell'}
+              className={cn(
+                'flex items-center justify-center aspect-square border rounded-md text-sm cursor-pointer',
+                !icon
+                  ? 'border-primary bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_var(--color-primary)]'
+                  : 'border-border bg-background text-muted-foreground hover:bg-accent hover:border-primary',
+              )}
               title="No icon"
               onClick={() => setIcon('')}
             >
@@ -162,9 +172,12 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
               <button
                 key={n}
                 type="button"
-                className={
-                  icon === n ? 'sb-icon-cell sb-icon-cell--active' : 'sb-icon-cell'
-                }
+                className={cn(
+                  'flex items-center justify-center aspect-square border rounded-md cursor-pointer',
+                  icon === n
+                    ? 'border-primary bg-accent text-accent-foreground shadow-[inset_0_0_0_1px_var(--color-primary)]'
+                    : 'border-border bg-background text-muted-foreground hover:bg-accent hover:border-primary',
+                )}
                 title={n}
                 aria-label={n}
                 onClick={() => setIcon(n)}
@@ -175,14 +188,14 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
           </div>
         </div>
 
-        {error && <p className="sb-form__error">{error}</p>}
-        <div className="sb-form__actions">
-          <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
+        {error && <p className="text-destructive text-[13px] m-0">{error}</p>}
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
+          </Button>
+          <Button type="submit" disabled={busy}>
             Save
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

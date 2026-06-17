@@ -5,6 +5,7 @@
  * update the guide (Save → PUT /api/guide). Live-refreshes on `_guide.md` fs events.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { ChevronRight, ChevronDown } from 'lucide-react';
 import type { FsEvent } from '@shared/types';
 import { fetchGuide, saveGuide } from '../api';
 import { useSpecs } from './SpecsProvider';
@@ -13,6 +14,7 @@ import { MdxRenderer } from './MdxRenderer';
 import { Editor } from './Editor';
 import { splitFrontMatter } from '../form/yamlSync';
 import { READONLY } from '../env';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   /** Category path ("" = root). The guide path is `${category}/_guide.md` (or `_guide.md`). */
@@ -97,54 +99,57 @@ export function GuidePanel({ category, defaultCollapsed = false }: Props) {
   const body = parts ? parts.body : '';
 
   return (
-    <section className="sb-guide-panel">
-      <header className="sb-guide-panel__bar">
+    <section className="border border-border border-l-[3px] border-l-primary bg-accent rounded-md mb-5">
+      {/* Header bar */}
+      <header className="flex items-center justify-between gap-2 px-3 py-2">
         <button
           type="button"
-          className="sb-guide-panel__toggle"
+          className="inline-flex items-center gap-2 flex-1 min-w-0 border-0 bg-transparent text-foreground cursor-pointer p-0 text-left"
           aria-expanded={!collapsed}
           onClick={() => setCollapsed((c) => !c)}
         >
-          <span className="sb-guide-panel__chevron" aria-hidden="true">
-            {collapsed ? '▸' : '▾'}
-          </span>
-          <span className="sb-guide-panel__title">{heading}</span>
+          {collapsed ? (
+            <ChevronRight className="size-3 text-primary flex-shrink-0" aria-hidden="true" />
+          ) : (
+            <ChevronDown className="size-3 text-primary flex-shrink-0" aria-hidden="true" />
+          )}
+          <span className="text-[13.5px] font-semibold text-[#4338ca]">{heading}</span>
         </button>
         {!READONLY && !collapsed && !editing && (
-          <button type="button" className="sb-btn" onClick={startEdit}>
+          <Button variant="outline" size="sm" onClick={startEdit}>
             Edit
-          </button>
+          </Button>
         )}
       </header>
 
       {!collapsed && (
-        <div className="sb-guide-panel__body">
+        <div className="border-t border-border bg-background px-4 py-3 rounded-b-md">
           {editing ? (
             <>
-              <div className="sb-guide-panel__editor">
+              {/* CodeMirror editor box — fixed 320px height, cm-editor fills it */}
+              <div className="h-80 border border-input rounded-md overflow-hidden [&_.cm-editor]:h-full [&_.cm-scroller]:overflow-auto">
                 <Editor value={draft} onChange={setDraft} />
               </div>
-              <div className="sb-guide-panel__actions">
-                <button
-                  type="button"
-                  className="sb-btn"
+              <div className="flex justify-end gap-2 mt-2.5">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => setEditing(false)}
                   disabled={saving}
                 >
                   Cancel
-                </button>
-                <button
-                  type="button"
-                  className="sb-btn sb-btn--primary"
+                </Button>
+                <Button
+                  size="sm"
                   onClick={() => void doSave()}
                   disabled={saving}
                 >
                   {saving ? 'Saving…' : 'Save'}
-                </button>
+                </Button>
               </div>
             </>
           ) : raw == null || body.trim() === '' ? (
-            <p className="sb-guide-panel__empty">No guide yet.</p>
+            <p className="m-0 text-muted-foreground text-[13.5px]">No guide yet.</p>
           ) : (
             // Render the raw guide (front-matter included). remark-frontmatter consumes
             // and hides the front-matter — same path specs use. Passing the front-matter-
