@@ -3,6 +3,7 @@ import path from 'node:path';
 import { program } from 'commander';
 import { startServer } from '../server/app.js';
 import { initSpecs } from '../server/init.js';
+import { exportStatic } from '../server/exportStatic.js';
 import { loadSpecs } from '../server/store.js';
 import { runGenerator } from '../server/generate.js';
 import { validateSpecs } from '../server/validate.js';
@@ -68,6 +69,40 @@ program
       console.log(`  specifian serve --dir ${opts.dir}`);
     } catch (err) {
       console.error('Initialization failed:', err instanceof Error ? err.message : err);
+      process.exit(1);
+    }
+  });
+
+// export command — write a read-only static snapshot
+program
+  .command('export')
+  .description('Export a read-only static site (host it on GitHub Pages etc.)')
+  .option('--dir <specsDir>', 'Specs directory', './.specs')
+  .option('--out <outDir>', 'Output directory', 'dist-static')
+  .action(async (opts: { dir: string; out: string }) => {
+    const specsDir = path.resolve(opts.dir);
+    const outDir = path.resolve(opts.out);
+
+    if (!fs.existsSync(specsDir)) {
+      console.error(`Error: Specs directory not found: ${specsDir}`);
+      console.error('Hint: Run specifian init --dir <directory> to initialize.');
+      process.exit(1);
+    }
+
+    console.log(`\n🗒  specifian v${VERSION} — static export`);
+    console.log(`📂 Specs directory: ${specsDir}`);
+    console.log(`📤 Output directory: ${outDir}\n`);
+
+    try {
+      await exportStatic({ specsDir, outDir });
+      console.log(`\n✅ Static site exported to: ${outDir}`);
+      console.log('Preview locally with any static server, e.g.:');
+      console.log(`  npx serve ${opts.out}`);
+    } catch (err) {
+      console.error(
+        'Static export failed:',
+        err instanceof Error ? err.message : err,
+      );
       process.exit(1);
     }
   });
