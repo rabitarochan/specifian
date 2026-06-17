@@ -15,7 +15,8 @@
     "types": ["node"],
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@/*": ["src/client/*"]
     }
   },
   "include": ["src"]

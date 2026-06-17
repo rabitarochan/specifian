@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
@@ -9,10 +10,11 @@ export default defineConfig({
   // document URL stays fixed, so relative asset/data URLs always resolve to
   // the deployment root. Harmless for `serve` (served at '/').
   base: './',
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       '@shared': fileURLToPath(new URL('./src/shared', import.meta.url)),
+      '@': fileURLToPath(new URL('./src/client', import.meta.url)),
     },
   },
   server: {
