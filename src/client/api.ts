@@ -7,6 +7,7 @@ import type {
   SpecDetail,
   CreateSpecRequest,
   CreateCategoryRequest,
+  SaveCategorySettingsRequest,
   AllData,
   Graph,
   GenerateRequest,
@@ -126,6 +127,20 @@ export function createSpec(
 export function createCategory(body: CreateCategoryRequest): Promise<void> {
   return request<void>('/api/categories', {
     method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * PUT /api/categories/<category> — merge icon/color into the category index
+ * (_.mdx) front-matter. Root category uses the empty path. Returns the updated SpecMeta.
+ */
+export function saveCategorySettings(
+  category: string,
+  body: SaveCategorySettingsRequest,
+): Promise<SpecMeta> {
+  return request<SpecMeta>(`/api/categories/${category}`, {
+    method: 'PUT',
     body: JSON.stringify(body),
   });
 }

@@ -17,9 +17,10 @@ import {
   type SimulationLinkDatum,
   type SimulationNodeDatum,
 } from 'd3-force';
+import { DynamicIcon, type IconName } from 'lucide-react/dynamic';
 import type { Graph, GraphNode } from '@shared/types';
 import { fetchGraph, ApiHttpError } from '../api';
-import { categoryColor } from './categoryColor';
+import { useCategoryStyles } from '../hooks/useCategoryStyles';
 import { GraphPreviewPane } from '../components/GraphPreviewPane';
 
 interface SimNode extends SimulationNodeDatum {
@@ -35,6 +36,7 @@ const WIDTH = 1200;
 const HEIGHT = 800;
 
 export function GraphPage() {
+  const { categoryColor, categoryIcon } = useCategoryStyles();
   const [graph, setGraph] = useState<Graph | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [, forceRender] = useState(0);
@@ -285,6 +287,7 @@ export function GraphPage() {
             {nodes.map((n) => {
               const dim = isDimmed(n.id);
               const color = n.missing ? '#9ca3af' : categoryColor(n.category);
+              const icon = n.missing ? undefined : categoryIcon(n.category);
               const isSelected = n.id === selected;
               return (
                 <g
@@ -317,6 +320,18 @@ export function GraphPage() {
                     strokeWidth={2}
                     strokeDasharray={n.missing ? '4 3' : undefined}
                   />
+                  {icon && (
+                    <svg
+                      x={-8}
+                      y={-8}
+                      width={16}
+                      height={16}
+                      viewBox="0 0 24 24"
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <DynamicIcon name={icon as IconName} color="#fff" size={24} />
+                    </svg>
+                  )}
                   <text className="sb-graph-label" x={18} y={4}>
                     {n.title}
                   </text>

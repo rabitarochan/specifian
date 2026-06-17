@@ -8,7 +8,15 @@ export function graphRouter(specsDir: string): Router {
   router.get('/', async (_req: Request, res: Response) => {
     try {
       const specs = await loadSpecs(specsDir);
-      const filtered = specs.filter((s) => s.slug !== '_template');
+      // The link graph visualizes spec-to-spec relationships only. Category index
+      // pages (slug "_", incl. the root Home) are navigational hubs, so they are
+      // excluded — both as nodes and as link targets — to avoid tree-like clutter.
+      // This is a UI-only filter; the underlying wiki-link data (SpecMeta.links,
+      // exposed via the API/MCP) is untouched.
+      const isIndexId = (id: string): boolean => id === '_' || id.endsWith(':_');
+      const filtered = specs.filter(
+        (s) => s.slug !== '_template' && s.slug !== '_',
+      );
 
       const existingIds = new Set(filtered.map((s) => s.id));
 
@@ -23,6 +31,7 @@ export function graphRouter(specsDir: string): Router {
 
       for (const spec of filtered) {
         for (const linkTarget of spec.links) {
+          if (isIndexId(linkTarget)) continue; // skip links to category index pages
           edges.push({ source: spec.id, target: linkTarget });
           if (!existingIds.has(linkTarget)) {
             missingIds.add(linkTarget);
