@@ -129,7 +129,7 @@ interface SpecMeta {
 
 ## Client UI
 
-Routing (BrowserRouter; the server falls back non-API paths to index.html):
+Routing uses `HashRouter`; routes live in the URL fragment, e.g. `#/specs/tables/users`. HashRouter is used in **both** `serve` and the static export so in-app URLs match across the two, and so the static snapshot works on a subpath (e.g. GitHub Pages) with no server-side SPA fallback. The `serve` server still falls non-API paths back to index.html as a safety net. Routes:
 
 - `/` — Home. Renders `_.mdx` at the specs root if it exists; otherwise shows a category list.
 - `/specs/<categoryPath>` — Category index (`_.mdx` if present; otherwise an auto-generated listing).
@@ -359,10 +359,86 @@ The generator (`src/cli/agents.ts`) reads the current guides to embed a brief su
 2. A usage workflow: `list_guides` → pick category → `get_guide` → `create_spec` / `write_spec`.
 3. A note that the category list is live via MCP and `AGENTS.md` does not need to be regenerated when categories change.
 
-## Future Extensions (v7 candidates)
+## v7 Feature Design: Static Site Export (`specifian export`)
 
-- Backlink panel, static site export (`specifian build`)
+### Concept
+
+Publish a **read-only snapshot** of `.specs/` as a fully static site (no server at
+runtime), suitable for GitHub Pages and other static hosts. Everything required to
+*read* specs already runs client-side (MDX `evaluate`, Mermaid, Excalidraw,
+wiki links, user components, search). So the export bakes every `GET` API response
+into JSON and reuses the existing client bundle — write paths and the WebSocket are
+simply disabled.
+
+### Key constraint: no rebuild at export time
+
+`vite` and the client dependencies are **devDependencies**, and the published
+package ships only the prebuilt `dist/client`. So `export` must **not** run
+`vite build`. Instead the same prebuilt bundle is reused for both modes, with the
+mode chosen **at runtime** rather than via a build-time flag:
+
+- The exported `index.html` injects `<script>window.__SPECIFIAN_STATIC__=true</script>`
+  before the module bundle. `src/client/env.ts` reads it into `STATIC` / `READONLY`.
+- `vite.config.ts` uses a **relative base** (`base: './'`), so assets resolve under
+  any mount path. Combined with HashRouter (the document URL never changes), the
+  same output works at the domain root or any subpath with zero configuration.
+
+### CLI
+
+```
+specifian export [--dir <specsDir>=./.specs] [--out <outDir>=dist-static]
+```
+
+Requires a prior `npm run build` (it copies the prebuilt client). Empties `outDir`
+on each run.
+
+### Export module (`src/server/exportStatic.ts`)
+
+Runs without starting the server, reusing existing core logic:
+
+1. Locate the prebuilt client (`<packageRoot>/dist/client`); error if missing.
+2. Copy it to `outDir`, inject the static marker into `index.html`, and copy
+   `index.html` → `404.html` (safety net).
+3. Bake `data/` JSON files mirroring the GET API:
+   - `specs.json`, `data.json`, `graph.json`, `components.json`, `validation.json`,
+     `drawings.json`
+   - `spec/<categoryPath>/<slug>.json` per spec (`{ meta, content }`)
+   - `schema/<key>.json` and `guide/<key>.json` for every category, ancestor, and
+     the root (`''` → key `_root`), so missing schema/guide return `{ schema: null }` /
+     `{ guide: null }` instead of a 404
+   - `drawings/<path>.json` per Excalidraw scene
+   - `search-index.json` — `SearchIndexEntry[]` (id/title/category/slug/description/
+     data/body) for in-browser full-text search
+
+Shared logic is extracted to stay Express-free and reused by both the routes and the
+export: `buildGraph` (routes/graph.ts), `loadUserComponents` (routes/components.ts),
+`scanExcalidraw` (routes/drawings.ts), and the search engine — `src/shared/searchEngine.ts`
+(`searchIndex(entries, q, limit)`), which `searchCore.ts` (via `buildSearchEntries`)
+and the client both call.
+
+### Client static mode
+
+- `src/client/env.ts` — exposes `STATIC`, `READONLY`, and `dataUrl(rel)`.
+- `api.ts` — in static mode, `GET` wrappers read `data/...` (relative paths); write
+  operations throw; `searchSpecs` lazily loads `search-index.json` (memoized) and runs
+  `searchIndex` in the browser; `fetchGenerators` → `[]`, `fetchRefs` → `{ refs: [] }`.
+- `ws.ts` — `subscribeFsEvents` is a no-op in static mode.
+- `mdx/userComponents.ts` — fetches `data/components.json` in static mode.
+- Editing UI is hidden behind `READONLY` (Sidebar add/menu buttons, SpecPage
+  edit/save, CategoryIndexPage, GuidePanel, Drawing). SpecPage never enters edit mode
+  even if `?edit=1` is present.
+
+### Hosting
+
+Works on any static host. On a subpath (e.g. `https://<user>.github.io/<repo>/`) no
+configuration is needed thanks to the relative base + HashRouter. The only request
+that 404s is the browser's automatic `favicon.ico` (the app ships none).
+
+## Future Extensions (v8 candidates)
+
+- Backlink panel
 - Editor autocomplete (`[[` completion, front-matter key completion), image paste and save
 - Full-text search indexing, Mermaid theme configuration, custom form widgets
 - Drawing integration in the graph page
 - ~~AGENTS.md generation (`specifian init`)~~ — implemented as `specifian agents` (see v6 Feature Design above)
+- ~~Static site export (`specifian build`)~~ — implemented as `specifian export` (see v7 Feature Design above)
