@@ -1,5 +1,17 @@
-/** Generic modal dialog. Closes on Escape, backdrop click, or Cancel. */
-import { useEffect, type ReactNode } from 'react';
+/**
+ * Generic modal dialog. Built on the shadcn/Radix Dialog primitive, so it
+ * handles focus-trapping, scroll-lock, Escape, and backdrop-click close for
+ * free. The `{ title, onClose, children }` API is kept stable so existing
+ * callers (New/Rename/Delete/Category dialogs) need no changes.
+ */
+import type { ReactNode } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+} from './ui/dialog';
 
 interface Props {
   title: string;
@@ -8,31 +20,19 @@ interface Props {
 }
 
 export function Modal({ title, onClose, children }: Props) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
   return (
-    <div className="sb-modal-backdrop" onClick={onClose}>
-      <div
-        className="sb-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="sb-modal__head">
-          <h2 className="sb-modal__title">{title}</h2>
-          <button className="sb-icon-btn" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </div>
-        <div className="sb-modal__body">{children}</div>
-      </div>
-    </div>
+    <Dialog
+      open
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+    >
+      <DialogContent className="max-w-[440px] gap-0 p-0">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <DialogBody>{children}</DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
