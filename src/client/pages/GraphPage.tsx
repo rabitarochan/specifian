@@ -22,6 +22,7 @@ import type { Graph, GraphNode } from '@shared/types';
 import { fetchGraph, ApiHttpError } from '../api';
 import { useCategoryStyles } from '../hooks/useCategoryStyles';
 import { GraphPreviewPane } from '../components/GraphPreviewPane';
+import { PageContainer, PageBar, PageTitle, Loading } from '../components/Page';
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
@@ -229,30 +230,35 @@ export function GraphPage() {
 
   if (error) {
     return (
-      <article className="sb-content">
-        <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">Graph Error</div>
-          <div className="sb-error-panel__message">{error}</div>
+      <PageContainer>
+        <div
+          className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
+          role="alert"
+        >
+          <div className="mb-1 font-bold text-destructive">Graph Error</div>
+          <div className="whitespace-pre-wrap font-mono text-[13px] text-[#991b1b]">
+            {error}
+          </div>
         </div>
-      </article>
+      </PageContainer>
     );
   }
 
-  if (!graph) return <div className="sb-loading">Loading…</div>;
+  if (!graph) return <Loading />;
 
   const nodes = nodesRef.current;
   const links = linksRef.current;
 
   return (
-    <div className="sb-graph-page">
-      <header className="sb-page-bar">
-        <h1 className="sb-page-bar__title">Link Graph</h1>
-        <span className="sb-graph-hint">
+    <div className="flex h-full flex-col">
+      <PageBar tight>
+        <PageTitle>Link Graph</PageTitle>
+        <span className="text-xs text-muted-foreground">
           Click to preview / Drag node to reposition / Drag background to pan /
           Scroll to zoom
         </span>
-      </header>
-      <div className="sb-graph-split">
+      </PageBar>
+      <div className="flex min-h-0 flex-1">
       <div className="sb-graph-canvas">
         <svg
           ref={svgRef}

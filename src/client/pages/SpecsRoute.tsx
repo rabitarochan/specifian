@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchSpecByPath, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
+import { Loading } from '../components/Page';
 import { SpecPage } from './SpecPage';
 import { CategoryIndexPage } from './CategoryIndexPage';
 
@@ -76,7 +77,7 @@ export function SpecsRoute() {
   }, [splat, specs]);
 
   if (resolved.kind === 'loading') {
-    return <div className="sb-loading">Loading…</div>;
+    return <Loading />;
   }
   if (resolved.kind === 'spec') {
     return (
