@@ -259,10 +259,10 @@ export function GraphPage() {
         </span>
       </PageBar>
       <div className="flex min-h-0 flex-1">
-      <div className="sb-graph-canvas">
+      <div className="min-h-0 min-w-0 flex-1 [background:radial-gradient(circle,#e5e7eb_1px,transparent_1px)_0_0/24px_24px,#fff]">
         <svg
           ref={svgRef}
-          className="sb-graph-svg"
+          className="block size-full touch-none select-none"
           viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
           onWheel={onWheel}
           onPointerDown={onBackgroundPointerDown}
@@ -283,7 +283,7 @@ export function GraphPage() {
                   y1={s.y}
                   x2={t.x}
                   y2={t.y}
-                  className="sb-graph-edge"
+                  className="stroke-[#d1d5db] [stroke-width:1.5]"
                   opacity={dim ? 0.08 : 0.5}
                 />
               );
@@ -299,7 +299,7 @@ export function GraphPage() {
                 <g
                   key={n.id}
                   transform={`translate(${n.x ?? 0}, ${n.y ?? 0})`}
-                  className="sb-graph-node"
+                  className="[&_circle]:transition-opacity [&_circle]:duration-150"
                   opacity={dim ? 0.2 : 1}
                   onPointerDown={(e) => onNodePointerDown(e, n)}
                   onMouseEnter={() => setHovered(n.id)}
@@ -338,7 +338,11 @@ export function GraphPage() {
                       <DynamicIcon name={icon as IconName} color="#fff" size={24} />
                     </svg>
                   )}
-                  <text className="sb-graph-label" x={18} y={4}>
+                  <text
+                    className="pointer-events-none fill-[#1f2937] font-sans [font-size:12px]"
+                    x={18}
+                    y={4}
+                  >
                     {n.title}
                   </text>
                 </g>

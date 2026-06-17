@@ -21,6 +21,7 @@ import type { SearchResult } from '@shared/types';
 import { specRoute } from '@shared/types';
 import { searchSpecs } from '../api';
 import { useDebounced } from '../hooks/useDebounced';
+import { cn } from '@/lib/utils';
 
 interface SearchPaletteContextValue {
   open: boolean;
@@ -129,17 +130,22 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="sb-palette-backdrop" onClick={onClose}>
+    /* Backdrop: fixed full-screen overlay, items-start + pt-[12vh] centres palette near top */
+    <div
+      className="fixed inset-0 bg-foreground/45 flex items-start justify-center z-[950] px-5 pt-[12vh] pb-5"
+      onClick={onClose}
+    >
       <div
-        className="sb-palette"
+        className="bg-background rounded-[10px] w-full max-w-[560px] shadow-[0_16px_48px_rgba(0,0,0,0.28)] overflow-hidden flex flex-col max-h-[70vh]"
         role="dialog"
         aria-modal="true"
         aria-label="Search specs"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Search input — large, borderless except bottom border */}
         <input
           ref={inputRef}
-          className="sb-palette__input"
+          className="w-full text-base px-[18px] py-4 border-0 border-b border-border outline-none bg-background text-foreground placeholder:text-muted-foreground"
           type="text"
           value={query}
           placeholder="Search specs…"
@@ -147,32 +153,36 @@ function SearchPalette({ onClose }: { onClose: () => void }) {
           onKeyDown={onKeyDown}
           aria-label="Search keyword"
         />
-        <div className="sb-palette__results" role="listbox">
+        {/* Results list */}
+        <div className="overflow-y-auto p-1.5" role="listbox">
           {query.trim() === '' ? (
-            <div className="sb-palette__hint">Search specs…</div>
+            <div className="px-[18px] py-[18px] text-muted-foreground text-[13.5px]">Search specs…</div>
           ) : results.length === 0 ? (
-            <div className="sb-palette__hint">No matching specs</div>
+            <div className="px-[18px] py-[18px] text-muted-foreground text-[13.5px]">No matching specs</div>
           ) : (
             results.map((r, i) => (
               <div
                 key={`${r.id}:${r.field}`}
                 role="option"
                 aria-selected={i === selected}
-                className={
-                  i === selected
-                    ? 'sb-palette__row sb-palette__row--selected'
-                    : 'sb-palette__row'
-                }
+                className={cn(
+                  'px-3 py-2 rounded-md cursor-pointer',
+                  i === selected && 'bg-accent',
+                )}
                 onMouseEnter={() => setSelected(i)}
                 onClick={() => go(r)}
               >
-                <div className="sb-palette__row-head">
-                  <span className="sb-palette__row-title">{r.title}</span>
-                  <span className="sb-palette__row-tag">
+                <div className="flex items-baseline gap-2">
+                  <span className={cn('font-bold text-foreground', i === selected && 'text-primary')}>
+                    {r.title}
+                  </span>
+                  <span className="font-mono text-[11px] text-muted-foreground bg-muted border border-border rounded px-[5px] py-px flex-shrink-0">
                     {r.category}·{r.field}
                   </span>
                 </div>
-                <div className="sb-palette__row-snippet">{r.snippet}</div>
+                <div className="text-[12.5px] text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap mt-0.5">
+                  {r.snippet}
+                </div>
               </div>
             ))
           )}

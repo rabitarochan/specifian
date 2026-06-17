@@ -38,9 +38,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
-      <div className="sb-toasts" aria-live="polite">
+      {/* Toast container — fixed bottom-right */}
+      <div
+        className="fixed right-5 bottom-5 flex flex-col gap-2 z-[1000]"
+        aria-live="polite"
+      >
         {items.map((t) => (
-          <div key={t.id} className="sb-toast">
+          <div
+            key={t.id}
+            className="bg-[#1f2937] text-white px-4 py-2.5 rounded-md text-[13.5px] shadow-[0_4px_16px_rgba(0,0,0,0.2)] animate-in slide-in-from-bottom-2 fade-in duration-[180ms] ease-out"
+          >
             {t.message}
           </div>
         ))}

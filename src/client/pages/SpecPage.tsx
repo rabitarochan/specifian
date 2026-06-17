@@ -309,8 +309,7 @@ export function SpecPage({ category, slug, specId }: Props) {
                 </button>
               ))}
             </div>
-            {/* keep sb-edit-pane: legacy CSS drives the CodeMirror (.cm-editor) height */}
-            <div className="sb-edit-pane">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               {editTab === 'text' ? (
                 <Editor value={text} onChange={setText} />
               ) : (
@@ -371,8 +370,7 @@ function FormPane({
 
   if (parts.error) {
     return (
-      // keep sb-form-pane: legacy CSS drives the form pane's scroll/padding
-      <div className="sb-form-pane">
+      <div className="flex min-h-0 flex-1 overflow-y-auto px-5 pb-[60px] pt-[18px]">
         <div
           className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
           role="alert"
@@ -395,7 +393,7 @@ function FormPane({
   };
 
   return (
-    <div className="sb-form-pane">
+    <div className="flex min-h-0 flex-1 overflow-y-auto px-5 pb-[60px] pt-[18px]">
       <SchemaForm schema={schema} value={data} onChange={handleChange} />
     </div>
   );

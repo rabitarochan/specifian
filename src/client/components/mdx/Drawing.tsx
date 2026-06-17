@@ -12,6 +12,7 @@ import { ApiHttpError, fetchDrawing } from '../../api';
 import { renderSceneSvg } from '../../excalidraw/excalidrawModule';
 import { useSpecs } from '../SpecsProvider';
 import { DrawingEditorModal } from '../DrawingEditorModal';
+import { Button } from '@/components/ui/button';
 import { Warning } from './Warning';
 import { READONLY } from '../../env';
 
@@ -106,15 +107,15 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
   if (status === 'missing') {
     return (
       <>
-        <div className="sb-drawing sb-drawing--missing">
-          <div className="sb-drawing__placeholder">
-            <div className="sb-drawing__placeholder-text">
+        <div className="my-[1.2em] overflow-x-auto rounded-lg border border-dashed border-input bg-muted px-4 py-4">
+          <div className="flex flex-col items-center gap-3 px-4 py-6 text-center">
+            <div className="text-[14px] text-muted-foreground">
               No drawing yet: <code>{src}</code>
             </div>
             {!READONLY && (
-              <button className="sb-btn sb-btn--primary" onClick={openEditor}>
+              <Button variant="default" size="sm" onClick={openEditor}>
                 Create drawing
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -132,28 +133,39 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
 
   if (status === 'error') {
     return (
-      <div className="sb-mermaid-error" role="alert">
-        <div className="sb-mermaid-error__title">Drawing render error: {src}</div>
-        <pre>{error}</pre>
+      <div
+        className="my-[1.2em] rounded-lg border border-[#fecaca] bg-[#fef2f2] px-3.5 py-3"
+        role="alert"
+      >
+        <div className="mb-1.5 font-semibold text-[#b91c1c]">Drawing render error: {src}</div>
+        <pre className="m-0 bg-transparent p-0 text-[12px] text-[#7f1d1d]">{error}</pre>
       </div>
     );
   }
 
   return (
     <>
-      <div className="sb-drawing" title={title}>
+      <div
+        className="group relative my-[1.2em] overflow-x-auto rounded-lg border border-border bg-background px-4 py-4"
+        title={title}
+      >
         {status === 'loading' && (
-          <div className="sb-drawing__loading">Loading drawing…</div>
+          <div className="text-[13px] text-muted-foreground">Loading drawing…</div>
         )}
-        <div className="sb-drawing__canvas" ref={containerRef} />
+        <div
+          className="flex justify-center [&_svg]:h-auto [&_svg]:max-w-full"
+          ref={containerRef}
+        />
         {!READONLY && status === 'ready' && (
-          <button
-            className="sb-drawing__edit"
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute right-2 top-2 cursor-pointer px-2.5 py-1 text-[12px] opacity-0 transition-opacity duration-[0.12s] ease-[ease] focus-visible:opacity-100 group-hover:opacity-100"
             onClick={openEditor}
             aria-label="Edit drawing"
           >
             Edit
-          </button>
+          </Button>
         )}
       </div>
       {!READONLY && editing && (

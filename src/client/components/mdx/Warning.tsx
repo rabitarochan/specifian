@@ -3,9 +3,14 @@ import type { ReactNode } from 'react';
 
 export function Warning({ title, children }: { title?: string; children: ReactNode }) {
   return (
-    <div className="sb-warning" role="note">
-      {title && <strong className="sb-warning__title">⚠ {title}</strong>}
-      <div className="sb-warning__body">{children}</div>
+    <div
+      className="my-3 rounded-lg border border-[#fde68a] bg-[#fffbeb] px-3.5 py-3 text-[#92400e]"
+      role="note"
+    >
+      {title && (
+        <strong className="mb-1 block font-semibold">⚠ {title}</strong>
+      )}
+      <div>{children}</div>
     </div>
   );
 }
