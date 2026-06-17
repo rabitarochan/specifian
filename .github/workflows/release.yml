@@ -23,7 +23,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 24 ships npm 11, matching the npm that authored package-lock.json.
+          # Running `npm ci` on npm 10 (Node 20) rejects the lockfile as out of sync.
+          node-version: 24
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
