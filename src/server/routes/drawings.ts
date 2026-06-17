@@ -28,7 +28,7 @@ function resolveGuarded(specsDir: string, relPath: string): string | null {
  * Recursively scan specsDir for *.excalidraw files.
  * Dot-directories (e.g. .git) and node_modules are excluded.
  */
-async function scanExcalidraw(specsDir: string, dir: string): Promise<DrawingMeta[]> {
+export async function scanExcalidraw(specsDir: string, dir: string): Promise<DrawingMeta[]> {
   let entries;
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
