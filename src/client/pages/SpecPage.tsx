@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { X } from 'lucide-react';
 import type { SpecDetail, FsEvent, LintIssue } from '@shared/types';
 import { fetchSpec, saveSpec, fetchCategorySchema, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
@@ -17,6 +18,9 @@ import { useDebounced } from '../hooks/useDebounced';
 import { MdxRenderer } from '../components/MdxRenderer';
 import { GuidePanel } from '../components/GuidePanel';
 import { Editor } from '../components/Editor';
+import { PageContainer, PageBar, PageTitle, IdBadge, Loading } from '../components/Page';
+import { Button } from '../components/ui/button';
+import { cn } from '../lib/utils';
 import { SchemaForm } from '../form/SchemaForm';
 import type { JsonSchema } from '../form/schemaTypes';
 import { splitFrontMatter, replaceFrontMatter } from '../form/yamlSync';
@@ -173,60 +177,63 @@ export function SpecPage({ category, slug, specId }: Props) {
 
   if (loadError) {
     return (
-      <article className="sb-content">
-        <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">Load Error</div>
-          <div className="sb-error-panel__message">{loadError}</div>
+      <PageContainer>
+        <div
+          className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
+          role="alert"
+        >
+          <div className="mb-1 font-bold text-destructive">Load Error</div>
+          <div className="whitespace-pre-wrap font-mono text-[13px] text-[#991b1b]">
+            {loadError}
+          </div>
         </div>
-      </article>
+      </PageContainer>
     );
   }
 
-  if (!detail) return <div className="sb-loading">Loading…</div>;
+  if (!detail) return <Loading />;
 
   const previewContent = editing ? debouncedText : detail.content;
   const issues = issuesBySpecId[specId] ?? [];
 
   return (
-    <div className="sb-spec-page">
-      <header className="sb-page-bar">
-        <div className="sb-page-bar__main">
-          <h1 className="sb-page-bar__title">
-            {dirty && <span className="sb-dirty" title="Unsaved changes">●</span>}
+    <div className="flex h-full flex-col">
+      <PageBar tight>
+        <div className="flex min-w-0 items-center gap-2.5">
+          <PageTitle>
+            {dirty && (
+              <span className="mr-1 align-middle text-xs text-primary" title="Unsaved changes">
+                ●
+              </span>
+            )}
             {detail.meta.title}
-          </h1>
-          <span className="sb-id-badge">{detail.meta.id}</span>
+          </PageTitle>
+          <IdBadge>{detail.meta.id}</IdBadge>
         </div>
         {!READONLY && (
-          <div className="sb-page-bar__actions">
+          <div className="flex shrink-0 gap-2">
             {editing && (
-              <button
-                className="sb-btn sb-btn--primary"
+              <Button
                 onClick={() => void doSave()}
                 disabled={saving || !dirty}
               >
                 {saving ? 'Saving…' : 'Save'}
-              </button>
+              </Button>
             )}
-            <button
-              className="sb-btn"
-              onClick={() => setEditing(!editing)}
-            >
+            <Button variant="outline" onClick={() => setEditing(!editing)}>
               {editing ? 'View' : 'Edit'}
-            </button>
+            </Button>
           </div>
         )}
-      </header>
+      </PageBar>
 
       {issues.length > 0 && (
-        <div className="sb-validation-banner" role="alert">
-          <strong className="sb-validation-banner__title">
-            Schema violations ({issues.length})
-          </strong>
-          <ul className="sb-validation-banner__list">
+        <div className={validationBannerClass} role="alert">
+          <strong className="mb-1 block">Schema violations ({issues.length})</strong>
+          <ul className={validationListClass}>
             {issues.map((issue, i) => (
-              <li key={`${issue.path}:${i}`}>
-                <code>{issue.path}</code>: {issue.message}
+              <li key={`${issue.path}:${i}`} className="my-0.5">
+                <code className="font-mono text-xs">{issue.path}</code>: {issue.message}
               </li>
             ))}
           </ul>
@@ -234,23 +241,24 @@ export function SpecPage({ category, slug, specId }: Props) {
       )}
 
       {saveIssues.length > 0 && (
-        <div className="sb-validation-banner sb-save-issues-banner" role="alert">
-          <div className="sb-save-issues-banner__head">
-            <strong className="sb-validation-banner__title">
+        <div className={validationBannerClass} role="alert">
+          <div className="flex items-center justify-between gap-2">
+            <strong className="mb-1 block">
               {saveIssues.length} issue{saveIssues.length !== 1 ? 's' : ''} found on save
             </strong>
-            <button
-              className="sb-icon-btn"
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label="Close"
               onClick={() => setSaveIssues([])}
             >
-              ✕
-            </button>
+              <X />
+            </Button>
           </div>
-          <ul className="sb-validation-banner__list">
+          <ul className={validationListClass}>
             {saveIssues.map((issue, i) => (
-              <li key={`${issue.rule}:${i}`}>
-                <code>[{issue.rule}]</code> {issue.message}
+              <li key={`${issue.rule}:${i}`} className="my-0.5">
+                <code className="font-mono text-xs">[{issue.rule}]</code> {issue.message}
                 {issue.line != null && ` (line ${issue.line})`}
               </li>
             ))}
@@ -259,39 +267,49 @@ export function SpecPage({ category, slug, specId }: Props) {
       )}
 
       {externalChange && (
-        <div className="sb-banner" role="status">
+        <div
+          className="border-b border-[#fde68a] bg-[#fffbeb] px-10 py-2 text-[13.5px] text-[#92400e]"
+          role="status"
+        >
           This file was changed externally. Saving will overwrite those changes.
-          <button className="sb-link-btn" onClick={() => void load()}>
+          <Button
+            variant="link"
+            size="sm"
+            className="h-auto px-1 text-[#92400e]"
+            onClick={() => void load()}
+          >
             Reload
-          </button>
+          </Button>
         </div>
       )}
 
       <GuidePanel category={category} defaultCollapsed />
 
       {editing ? (
-        <div className="sb-split">
-          <div className="sb-split__editor">
-            <div className="sb-edit-tabs" role="tablist" aria-label="Edit mode">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={editTab === 'text'}
-                className={`sb-edit-tab${editTab === 'text' ? ' sb-edit-tab--active' : ''}`}
-                onClick={() => setEditTab('text')}
-              >
-                Text
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={editTab === 'form'}
-                className={`sb-edit-tab${editTab === 'form' ? ' sb-edit-tab--active' : ''}`}
-                onClick={() => setEditTab('form')}
-              >
-                Form
-              </button>
+        <div className="flex min-h-0 flex-1">
+          <div className="flex w-1/2 flex-col overflow-hidden border-r border-border">
+            <div
+              className="flex shrink-0 gap-1 border-b border-border bg-muted px-2.5 py-2"
+              role="tablist"
+              aria-label="Edit mode"
+            >
+              {(['text', 'form'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  type="button"
+                  role="tab"
+                  aria-selected={editTab === tab}
+                  onClick={() => setEditTab(tab)}
+                  className={cn(
+                    'rounded-md border border-transparent px-3.5 py-1 text-[13px] font-semibold capitalize text-muted-foreground transition-colors hover:text-foreground',
+                    editTab === tab && 'border-border bg-background text-primary',
+                  )}
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
+            {/* keep sb-edit-pane: legacy CSS drives the CodeMirror (.cm-editor) height */}
             <div className="sb-edit-pane">
               {editTab === 'text' ? (
                 <Editor value={text} onChange={setText} />
@@ -304,30 +322,34 @@ export function SpecPage({ category, slug, specId }: Props) {
               )}
             </div>
           </div>
-          <div className="sb-split__preview">
-            <article className="sb-content sb-content--preview">
+          <div className="w-1/2 overflow-y-auto">
+            <PageContainer preview>
               <MdxRenderer
                 content={previewContent}
                 specs={specs}
                 category={category}
                 slug={slug}
               />
-            </article>
+            </PageContainer>
           </div>
         </div>
       ) : (
-        <article className="sb-content">
+        <PageContainer>
           <MdxRenderer
             content={previewContent}
             specs={specs}
             category={category}
             slug={slug}
           />
-        </article>
+        </PageContainer>
       )}
     </div>
   );
 }
+
+const validationBannerClass =
+  'border-b border-[#fde68a] bg-[#fffbeb] px-10 py-2.5 text-[13.5px] text-[#92400e]';
+const validationListClass = 'm-0 pl-[1.3em]';
 
 /**
  * Form tab content. Parses front-matter from the current text and either:
@@ -349,10 +371,14 @@ function FormPane({
 
   if (parts.error) {
     return (
+      // keep sb-form-pane: legacy CSS drives the form pane's scroll/padding
       <div className="sb-form-pane">
-        <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">Cannot display form</div>
-          <div className="sb-error-panel__message">
+        <div
+          className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
+          role="alert"
+        >
+          <div className="mb-1 font-bold text-destructive">Cannot display form</div>
+          <div className="whitespace-pre-wrap font-mono text-[13px] text-[#991b1b]">
             Failed to parse front-matter YAML: {parts.error}.
             Please fix it in the Text tab.
           </div>

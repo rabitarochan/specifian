@@ -13,6 +13,8 @@ import { MdxRenderer } from '../components/MdxRenderer';
 import { GuidePanel } from '../components/GuidePanel';
 import { MdxProvider } from '../mdx/MdxContext';
 import { SpecList } from '../components/mdx/SpecList';
+import { PageContainer, PageBar, PageTitle, Loading } from '../components/Page';
+import { Button } from '../components/ui/button';
 import { READONLY } from '../env';
 
 export function CategoryIndexPage({ category }: { category: string }) {
@@ -66,54 +68,58 @@ export function CategoryIndexPage({ category }: { category: string }) {
     }
   };
 
-  if (loading) return <div className="sb-loading">Loading…</div>;
+  if (loading) return <Loading />;
 
   if (detail) {
     return (
-      <article className="sb-content">
-        <header className="sb-page-bar">
-          <h1 className="sb-page-bar__title">{detail.meta.title}</h1>
+      <>
+        <PageBar>
+          <PageTitle>{detail.meta.title}</PageTitle>
           {!READONLY && (
-            <div className="sb-page-bar__actions">
-              <button
-                className="sb-btn"
+            <div className="flex shrink-0 gap-2">
+              <Button
+                variant="outline"
                 onClick={() => navigate(`${indexRoute}?edit=1`)}
               >
                 Edit Index
-              </button>
+              </Button>
             </div>
           )}
-        </header>
-        <GuidePanel category={category} />
-        <MdxRenderer
-          content={detail.content}
-          specs={specs}
-          category={category}
-          slug="_"
-        />
-      </article>
+        </PageBar>
+        <PageContainer>
+          <GuidePanel category={category} />
+          <MdxRenderer
+            content={detail.content}
+            specs={specs}
+            category={category}
+            slug="_"
+          />
+        </PageContainer>
+      </>
     );
   }
 
   // Auto-generated spec list
   return (
-    <article className="sb-content">
-      <header className="sb-page-bar">
-        <h1 className="sb-page-bar__title">{category}</h1>
+    <>
+      <PageBar>
+        <PageTitle>{category}</PageTitle>
         {!READONLY && (
-          <div className="sb-page-bar__actions">
-            <button className="sb-btn" onClick={createAndEdit} disabled={creating}>
+          <div className="flex shrink-0 gap-2">
+            <Button variant="outline" onClick={createAndEdit} disabled={creating}>
               {creating ? 'Creating…' : 'Create Index'}
-            </button>
+            </Button>
           </div>
         )}
-      </header>
-      <GuidePanel category={category} />
-      <div className="sb-prose">
-        <MdxProvider value={{ specs, category }}>
-          <SpecList category={category} />
-        </MdxProvider>
-      </div>
-    </article>
+      </PageBar>
+      <PageContainer>
+        <GuidePanel category={category} />
+        <div className="sb-prose">
+          <MdxProvider value={{ specs, category }}>
+            <SpecList category={category} />
+          </MdxProvider>
+        </div>
+      </PageContainer>
+    </>
   );
 }

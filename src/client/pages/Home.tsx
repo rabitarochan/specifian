@@ -9,6 +9,8 @@ import { fetchSpec, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
 import { MdxRenderer } from '../components/MdxRenderer';
 import { GuidePanel } from '../components/GuidePanel';
+import { PageContainer, Loading } from '../components/Page';
+import { Card, CardTitle } from '../components/ui/card';
 
 export function Home() {
   const { specs } = useSpecs();
@@ -43,11 +45,11 @@ export function Home() {
     };
   }, []);
 
-  if (loading) return <div className="sb-loading">Loading…</div>;
+  if (loading) return <Loading />;
 
   if (detail && !notFound) {
     return (
-      <article className="sb-content">
+      <PageContainer>
         <GuidePanel category="" />
         <MdxRenderer
           content={detail.content}
@@ -55,7 +57,7 @@ export function Home() {
           category={detail.meta.category}
           slug={detail.meta.slug}
         />
-      </article>
+      </PageContainer>
     );
   }
 
@@ -65,7 +67,7 @@ export function Home() {
   );
 
   return (
-    <article className="sb-content">
+    <PageContainer>
       <GuidePanel category="" />
       <div className="sb-prose">
         <h1>Welcome to specifian</h1>
@@ -76,10 +78,16 @@ export function Home() {
         {categories.length > 0 ? (
           <>
             <h2>Categories</h2>
-            <div className="sb-card-grid">
+            <div className="my-4 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
               {categories.map((cat) => (
-                <Link key={cat} to={`/specs/${cat}`} className="sb-card">
-                  <span className="sb-card__title">{cat}</span>
+                <Link
+                  key={cat}
+                  to={`/specs/${cat}`}
+                  className="group transition-colors hover:no-underline"
+                >
+                  <Card className="px-4 py-3.5 transition-shadow group-hover:border-primary group-hover:shadow-[0_2px_10px_rgba(79,70,229,0.08)]">
+                    <CardTitle>{cat}</CardTitle>
+                  </Card>
                 </Link>
               ))}
             </div>
@@ -90,6 +98,6 @@ export function Home() {
           </p>
         )}
       </div>
-    </article>
+    </PageContainer>
   );
 }
