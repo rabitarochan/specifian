@@ -1,6 +1,6 @@
 {
   "name": "specifian",
-  "version": "0.1.0-beta.0",
+  "version": "0.1.0-beta.1",
   "description": "Spec-as-code documentation tool: render and edit local MDX specs with front-matter as structured design data",
   "keywords": [
     "documentation",
