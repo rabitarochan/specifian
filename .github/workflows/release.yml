@@ -1,0 +1,56 @@
+name: Release
+
+# Publishing is driven entirely by tags. Create a version tag with
+# `npm run release:beta` (prerelease) or `npm run release` (stable) — both run
+# `npm version` (which commits + tags) and push with --follow-tags. This workflow
+# then publishes to npm using an automation token, so there is no interactive OTP
+# step that can fail and leave the version drifting ahead of the registry.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      - name: Verify package.json version matches the tag
+        id: ver
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag ($TAG) does not match package.json version ($PKG)"
+            exit 1
+          fi
+          echo "version=$PKG" >> "$GITHUB_OUTPUT"
+
+      - name: Determine npm dist-tag
+        id: disttag
+        run: |
+          # A prerelease version contains a hyphen (e.g. 0.1.0-beta.2) -> "beta" tag,
+          # a stable version (e.g. 0.1.0) -> "latest".
+          case "${{ steps.ver.outputs.version }}" in
+            *-*) echo "tag=beta" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "tag=latest" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      # prepublishOnly runs `npm run typecheck && npm run build` before this publishes.
+      - name: Publish to npm
+        run: npm publish --tag "${{ steps.disttag.outputs.tag }}" --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
