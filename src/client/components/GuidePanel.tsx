@@ -12,6 +12,7 @@ import { useToast } from './Toast';
 import { MdxRenderer } from './MdxRenderer';
 import { Editor } from './Editor';
 import { splitFrontMatter } from '../form/yamlSync';
+import { READONLY } from '../env';
 
 interface Props {
   /** Category path ("" = root). The guide path is `${category}/_guide.md` (or `_guide.md`). */
@@ -85,6 +86,8 @@ export function GuidePanel({ category, defaultCollapsed = false }: Props) {
 
   // Don't render anything until the first fetch resolves (avoids a flash).
   if (!loaded) return null;
+  // In read-only mode there's nothing to show when a category has no guide.
+  if (READONLY && raw == null) return null;
 
   const parts = raw != null ? splitFrontMatter(raw) : null;
   const heading =
@@ -107,7 +110,7 @@ export function GuidePanel({ category, defaultCollapsed = false }: Props) {
           </span>
           <span className="sb-guide-panel__title">{heading}</span>
         </button>
-        {!collapsed && !editing && (
+        {!READONLY && !collapsed && !editing && (
           <button type="button" className="sb-btn" onClick={startEdit}>
             Edit
           </button>

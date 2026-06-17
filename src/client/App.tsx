@@ -1,5 +1,5 @@
 /** Assembles routing and providers. */
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { SpecsProvider } from './components/SpecsProvider';
 import { UserComponentsProvider } from './components/UserComponentsProvider';
@@ -12,7 +12,7 @@ import { GraphPage } from './pages/GraphPage';
 
 export function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <ToastProvider>
         <SpecsProvider>
           <ValidationProvider>
@@ -31,6 +31,6 @@ export function App() {
           </ValidationProvider>
         </SpecsProvider>
       </ToastProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }

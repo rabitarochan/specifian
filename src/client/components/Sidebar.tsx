@@ -19,6 +19,7 @@ import { DeleteSpecDialog } from './DeleteSpecDialog';
 import { CategorySettingsDialog } from './CategorySettingsDialog';
 import { CategoryIcon } from './CategoryIcon';
 import { useCategoryStyles } from '../hooks/useCategoryStyles';
+import { READONLY } from '../env';
 
 interface TreeNode {
   /** Full path of this node (e.g. "api", "api/v1") */
@@ -274,14 +275,18 @@ function CategoryNode({
           </span>
           {node.name}
         </NavLink>
-        <CategoryRowMenu category={node.path} onSettings={onSettings} />
-        <button
-          className="sb-icon-btn sb-tree__add"
-          title="Add spec"
-          onClick={() => onAddSpec(node.path)}
-        >
-          ＋
-        </button>
+        {!READONLY && (
+          <>
+            <CategoryRowMenu category={node.path} onSettings={onSettings} />
+            <button
+              className="sb-icon-btn sb-tree__add"
+              title="Add spec"
+              onClick={() => onAddSpec(node.path)}
+            >
+              ＋
+            </button>
+          </>
+        )}
       </div>
       {(sortedChildren.length > 0 || sortedSpecs.length > 0) && (
         <ul className="sb-tree__children">
@@ -309,11 +314,13 @@ function CategoryNode({
                   {s.title}
                   {issues && issues.length > 0 && <IssueBadge issues={issues} />}
                 </NavLink>
-                <SpecRowMenu
-                  specId={s.id}
-                  onRename={onRenameSpec}
-                  onDelete={onDeleteSpec}
-                />
+                {!READONLY && (
+                  <SpecRowMenu
+                    specId={s.id}
+                    onRename={onRenameSpec}
+                    onDelete={onDeleteSpec}
+                  />
+                )}
               </li>
             );
           })}
@@ -378,13 +385,15 @@ export function Sidebar() {
 
       <div className="sb-sidebar__section-head">
         <span>Categories</span>
-        <button
-          className="sb-icon-btn"
-          title="New category"
-          onClick={() => setShowCategory(true)}
-        >
-          ＋
-        </button>
+        {!READONLY && (
+          <button
+            className="sb-icon-btn"
+            title="New category"
+            onClick={() => setShowCategory(true)}
+          >
+            ＋
+          </button>
+        )}
       </div>
 
       <ul className="sb-tree">

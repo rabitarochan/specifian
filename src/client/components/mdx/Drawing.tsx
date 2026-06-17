@@ -13,6 +13,7 @@ import { renderSceneSvg } from '../../excalidraw/excalidrawModule';
 import { useSpecs } from '../SpecsProvider';
 import { DrawingEditorModal } from '../DrawingEditorModal';
 import { Warning } from './Warning';
+import { READONLY } from '../../env';
 
 interface Props {
   /** Path relative to specsDir, without extension (e.g. "screens/login") */
@@ -110,12 +111,14 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
             <div className="sb-drawing__placeholder-text">
               No drawing yet: <code>{src}</code>
             </div>
-            <button className="sb-btn sb-btn--primary" onClick={openEditor}>
-              Create drawing
-            </button>
+            {!READONLY && (
+              <button className="sb-btn sb-btn--primary" onClick={openEditor}>
+                Create drawing
+              </button>
+            )}
           </div>
         </div>
-        {editing && (
+        {!READONLY && editing && (
           <DrawingEditorModal
             src={src}
             initialScene={null}
@@ -143,7 +146,7 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
           <div className="sb-drawing__loading">Loading drawing…</div>
         )}
         <div className="sb-drawing__canvas" ref={containerRef} />
-        {status === 'ready' && (
+        {!READONLY && status === 'ready' && (
           <button
             className="sb-drawing__edit"
             onClick={openEditor}
@@ -153,7 +156,7 @@ function DrawingInner({ src, title }: { src: string; title?: string }) {
           </button>
         )}
       </div>
-      {editing && (
+      {!READONLY && editing && (
         <DrawingEditorModal
           src={src}
           initialScene={sceneRef.current}
