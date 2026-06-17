@@ -13,6 +13,7 @@ import { MdxRenderer } from '../components/MdxRenderer';
 import { GuidePanel } from '../components/GuidePanel';
 import { MdxProvider } from '../mdx/MdxContext';
 import { SpecList } from '../components/mdx/SpecList';
+import { READONLY } from '../env';
 
 export function CategoryIndexPage({ category }: { category: string }) {
   const { specs, refetch } = useSpecs();
@@ -72,14 +73,16 @@ export function CategoryIndexPage({ category }: { category: string }) {
       <article className="sb-content">
         <header className="sb-page-bar">
           <h1 className="sb-page-bar__title">{detail.meta.title}</h1>
-          <div className="sb-page-bar__actions">
-            <button
-              className="sb-btn"
-              onClick={() => navigate(`${indexRoute}?edit=1`)}
-            >
-              Edit Index
-            </button>
-          </div>
+          {!READONLY && (
+            <div className="sb-page-bar__actions">
+              <button
+                className="sb-btn"
+                onClick={() => navigate(`${indexRoute}?edit=1`)}
+              >
+                Edit Index
+              </button>
+            </div>
+          )}
         </header>
         <GuidePanel category={category} />
         <MdxRenderer
@@ -97,11 +100,13 @@ export function CategoryIndexPage({ category }: { category: string }) {
     <article className="sb-content">
       <header className="sb-page-bar">
         <h1 className="sb-page-bar__title">{category}</h1>
-        <div className="sb-page-bar__actions">
-          <button className="sb-btn" onClick={createAndEdit} disabled={creating}>
-            {creating ? 'Creating…' : 'Create Index'}
-          </button>
-        </div>
+        {!READONLY && (
+          <div className="sb-page-bar__actions">
+            <button className="sb-btn" onClick={createAndEdit} disabled={creating}>
+              {creating ? 'Creating…' : 'Create Index'}
+            </button>
+          </div>
+        )}
       </header>
       <GuidePanel category={category} />
       <div className="sb-prose">

@@ -14,6 +14,7 @@
 import * as React from 'react';
 import type { ComponentType } from 'react';
 import type { UserComponentFile } from '@shared/types';
+import { STATIC, dataUrl } from '../env';
 
 export interface UserComponentsResult {
   components: Record<string, ComponentType<unknown>>;
@@ -94,9 +95,10 @@ async function compileFile(
 let cache: Promise<UserComponentsResult> | null = null;
 
 async function fetchComponentFiles(): Promise<UserComponentFile[]> {
-  const res = await fetch('/api/components');
+  const url = STATIC ? dataUrl('components.json') : '/api/components';
+  const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(`GET /api/components failed (${res.status})`);
+    throw new Error(`GET ${url} failed (${res.status})`);
   }
   return (await res.json()) as UserComponentFile[];
 }

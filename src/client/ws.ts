@@ -4,6 +4,7 @@
  * Vite dev proxies /ws to ws://localhost:4399.
  */
 import type { FsEvent } from '@shared/types';
+import { STATIC } from './env';
 
 type Listener = (event: FsEvent) => void;
 
@@ -68,6 +69,8 @@ function scheduleReconnect(): void {
  * Returns a function that removes the subscription.
  */
 export function subscribeFsEvents(listener: Listener): () => void {
+  // Static snapshots have no server/WebSocket: nothing ever fires.
+  if (STATIC) return () => {};
   listeners.add(listener);
   connect();
   return () => {

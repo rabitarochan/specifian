@@ -21,6 +21,7 @@ import { SchemaForm } from '../form/SchemaForm';
 import type { JsonSchema } from '../form/schemaTypes';
 import { splitFrontMatter, replaceFrontMatter } from '../form/yamlSync';
 import { inferSchema } from '../form/infer';
+import { READONLY } from '../env';
 
 type EditTab = 'text' | 'form';
 
@@ -49,7 +50,8 @@ export function SpecPage({ category, slug, specId }: Props) {
   const [categorySchema, setCategorySchema] = useState<JsonSchema | null>(null);
   const [schemaCategory, setSchemaCategory] = useState<string | null>(null);
 
-  const editing = searchParams.get('edit') === '1';
+  // Static snapshots are read-only: never enter edit mode even if ?edit=1 is present.
+  const editing = !READONLY && searchParams.get('edit') === '1';
   const dirty = detail !== null && text !== detail.content;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
@@ -195,23 +197,25 @@ export function SpecPage({ category, slug, specId }: Props) {
           </h1>
           <span className="sb-id-badge">{detail.meta.id}</span>
         </div>
-        <div className="sb-page-bar__actions">
-          {editing && (
+        {!READONLY && (
+          <div className="sb-page-bar__actions">
+            {editing && (
+              <button
+                className="sb-btn sb-btn--primary"
+                onClick={() => void doSave()}
+                disabled={saving || !dirty}
+              >
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            )}
             <button
-              className="sb-btn sb-btn--primary"
-              onClick={() => void doSave()}
-              disabled={saving || !dirty}
+              className="sb-btn"
+              onClick={() => setEditing(!editing)}
             >
-              {saving ? 'Saving…' : 'Save'}
+              {editing ? 'View' : 'Edit'}
             </button>
-          )}
-          <button
-            className="sb-btn"
-            onClick={() => setEditing(!editing)}
-          >
-            {editing ? 'View' : 'Edit'}
-          </button>
-        </div>
+          </div>
+        )}
       </header>
 
       {issues.length > 0 && (

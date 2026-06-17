@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url';
 
 export default defineConfig({
   root: 'src/client',
+  // Relative base so the built bundle works at any mount path (root or a
+  // GitHub Pages subpath) without a rebuild. Combined with HashRouter, the
+  // document URL stays fixed, so relative asset/data URLs always resolve to
+  // the deployment root. Harmless for `serve` (served at '/').
+  base: './',
   plugins: [react()],
   resolve: {
     alias: {
