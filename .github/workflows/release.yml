@@ -23,12 +23,16 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # Node 24 ships npm 11, matching the npm that authored package-lock.json.
-          # Running `npm ci` on npm 10 (Node 20) rejects the lockfile as out of sync.
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
 
-      - run: npm ci
+      # Use `npm install` rather than `npm ci`: transitive WASM-fallback optional
+      # deps (e.g. @emnapi/*, pulled by Vite/rolldown native bindings) re-resolve
+      # to different patch versions across npm releases, so a strictly-synced
+      # lockfile across the dev machine and the CI runner is impractical. Install
+      # reconciles the lock at run time; publish correctness is gated by
+      # prepublishOnly (typecheck + build).
+      - run: npm install --no-audit --no-fund
 
       - name: Verify package.json version matches the tag
         id: ver
