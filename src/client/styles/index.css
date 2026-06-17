@@ -148,6 +148,14 @@ a:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.sb-tree__cat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  vertical-align: middle;
+  margin-right: 6px;
+}
 .sb-tree__cat:hover {
   background: var(--accent-weak);
   text-decoration: none;
@@ -1471,6 +1479,7 @@ select.sb-cell-input {
   font-size: 13px;
 }
 .sb-tree__spec:hover .sb-tree__more,
+.sb-tree__row:hover .sb-tree__more,
 .sb-tree__more:focus-visible {
   opacity: 1;
 }
@@ -1627,4 +1636,82 @@ select.sb-cell-input {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+/* ===== Category settings dialog (icon + color) ===== */
+.sb-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+}
+.sb-btn--ghost:hover {
+  background: var(--accent-weak);
+  color: var(--accent);
+}
+.sb-cat-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  font-weight: 600;
+}
+.sb-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.sb-color-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.sb-color-swatch--active {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.sb-color-custom {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #fff;
+  cursor: pointer;
+}
+.sb-icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.sb-icon-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+.sb-icon-cell:hover {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+.sb-icon-cell--active {
+  border-color: var(--accent);
+  background: var(--accent-weak);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }

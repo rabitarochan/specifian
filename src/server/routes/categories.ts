@@ -1,8 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { guardPath } from '../store.js';
-import type { CreateCategoryRequest } from '../../shared/types.js';
+import matter from 'gray-matter';
+import { guardPath, loadSpec, resolveSpecPathAny } from '../store.js';
+import type {
+  CreateCategoryRequest,
+  SaveCategorySettingsRequest,
+} from '../../shared/types.js';
 
 const DEFAULT_INDEX_CONTENT = (categoryPath: string) =>
   `---
@@ -96,6 +100,102 @@ export function categoriesRouter(specsDir: string): Router {
     } catch (err) {
       res.status(500).json({ error: String(err) });
     }
+  });
+
+  // Resolve the category path from the request URL ("" = root), with a path-traversal
+  // guard. Mirrors routes/guide.ts.
+  function resolveCategory(req: Request, res: Response): string | null {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(req.path);
+    } catch {
+      res.status(400).json({ error: 'Failed to decode URL' });
+      return null;
+    }
+    const category = decoded.replace(/^\//, '').replace(/\/$/, '');
+    const segments = category === '' ? [] : category.split('/');
+    const target = path.join(specsDir, ...segments);
+    if (!guardPath(specsDir, target)) {
+      res.status(400).json({ error: 'Path traversal is not allowed' });
+      return null;
+    }
+    return category;
+  }
+
+  // PUT /api/categories/<category> — merge icon/color into the category index
+  // (_.mdx) front-matter. Creates _.mdx from the default template when absent.
+  router.put(/^(\/.*)?$/, async (req: Request, res: Response): Promise<void> => {
+    const category = resolveCategory(req, res);
+    if (category === null) return;
+
+    const body = (req.body ?? {}) as SaveCategorySettingsRequest;
+
+    // Locate the index file (_.mdx preferred, then _.md).
+    const candidates = resolveSpecPathAny(specsDir, category, '_');
+    let target: string | null = null;
+    for (const candidate of candidates) {
+      try {
+        await fs.access(candidate);
+        target = candidate;
+        break;
+      } catch {
+        // keep looking
+      }
+    }
+
+    let raw: string;
+    if (target === null) {
+      // No index yet — create _.mdx from the default template.
+      target = candidates[0];
+      raw = DEFAULT_INDEX_CONTENT(category);
+      try {
+        await fs.mkdir(path.dirname(target), { recursive: true });
+      } catch (err) {
+        res.status(500).json({ error: String(err) });
+        return;
+      }
+    } else {
+      try {
+        raw = await fs.readFile(target, 'utf-8');
+      } catch (err) {
+        res.status(500).json({ error: String(err) });
+        return;
+      }
+    }
+
+    // Merge icon / color into the front-matter (null / '' clears the key).
+    let content: string;
+    let data: Record<string, unknown>;
+    try {
+      const parsed = matter(raw);
+      content = parsed.content;
+      data = parsed.data as Record<string, unknown>;
+    } catch (err) {
+      res.status(400).json({ error: `Failed to parse front-matter: ${String(err)}` });
+      return;
+    }
+    const apply = (key: 'icon' | 'color', value: string | null | undefined): void => {
+      if (value === undefined) return; // not provided → leave as-is
+      const trimmed = typeof value === 'string' ? value.trim() : '';
+      if (trimmed === '') delete data[key];
+      else data[key] = trimmed;
+    };
+    apply('icon', body.icon);
+    apply('color', body.color);
+
+    try {
+      await fs.writeFile(target, matter.stringify(content, data), 'utf-8');
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+      return;
+    }
+
+    const saved = await loadSpec(specsDir, target);
+    if (!saved) {
+      res.status(500).json({ error: 'Failed to reload category index after save' });
+      return;
+    }
+    res.json(saved.meta);
   });
 
   return router;

@@ -16,6 +16,9 @@ import { NewCategoryDialog } from './NewCategoryDialog';
 import { NewSpecDialog } from './NewSpecDialog';
 import { RenameSpecDialog } from './RenameSpecDialog';
 import { DeleteSpecDialog } from './DeleteSpecDialog';
+import { CategorySettingsDialog } from './CategorySettingsDialog';
+import { CategoryIcon } from './CategoryIcon';
+import { useCategoryStyles } from '../hooks/useCategoryStyles';
 
 interface TreeNode {
   /** Full path of this node (e.g. "api", "api/v1") */
@@ -35,6 +38,10 @@ function buildTree(specs: SpecMeta[]): TreeNode {
   for (const s of specs) categories.add(s.category);
 
   const ensure = (catPath: string): TreeNode => {
+    // The root category ("") is the project index (.specs/_.mdx, the "Home" page);
+    // it must not appear as a category row. Map it to the root node itself instead of
+    // creating an empty-named child.
+    if (catPath === '') return root;
     const segments = catPath.split('/');
     let node = root;
     let acc = '';
@@ -155,19 +162,91 @@ function SpecRowMenu({
   );
 }
 
+/**
+ * ⋯ popover menu for a category row. Single action: open the icon/color settings.
+ * Closes on outside click or Escape (mirrors SpecRowMenu).
+ */
+function CategoryRowMenu({
+  category,
+  onSettings,
+}: {
+  category: string;
+  onSettings: (category: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open]);
+
+  return (
+    <div className="sb-row-menu-wrap" ref={menuRef}>
+      <button
+        className="sb-icon-btn sb-tree__more"
+        title="Menu"
+        aria-label="Open category menu"
+        aria-haspopup="true"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+      >
+        ⋯
+      </button>
+      {open && (
+        <div className="sb-row-menu" role="menu">
+          <button
+            className="sb-row-menu__item"
+            role="menuitem"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              onSettings(category);
+            }}
+          >
+            Icon &amp; color…
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CategoryNode({
   node,
   onAddSpec,
   onRenameSpec,
   onDeleteSpec,
+  onSettings,
   issuesBySpecId,
 }: {
   node: TreeNode;
   onAddSpec: (category: string) => void;
   onRenameSpec: (id: string) => void;
   onDeleteSpec: (id: string) => void;
+  onSettings: (category: string) => void;
   issuesBySpecId: Record<string, ValidationIssue[]>;
 }) {
+  const { categoryColor, categoryIcon } = useCategoryStyles();
   const sortedChildren = useMemo(
     () => [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name)),
     [node],
@@ -186,8 +265,16 @@ function CategoryNode({
             isActive ? 'sb-tree__cat sb-tree__cat--active' : 'sb-tree__cat'
           }
         >
+          <span className="sb-tree__cat-icon" aria-hidden="true">
+            <CategoryIcon
+              name={categoryIcon(node.path)}
+              color={categoryColor(node.path)}
+              size={14}
+            />
+          </span>
           {node.name}
         </NavLink>
+        <CategoryRowMenu category={node.path} onSettings={onSettings} />
         <button
           className="sb-icon-btn sb-tree__add"
           title="Add spec"
@@ -205,6 +292,7 @@ function CategoryNode({
               onAddSpec={onAddSpec}
               onRenameSpec={onRenameSpec}
               onDeleteSpec={onDeleteSpec}
+              onSettings={onSettings}
               issuesBySpecId={issuesBySpecId}
             />
           ))}
@@ -244,6 +332,7 @@ export function Sidebar() {
   const [specDialogCategory, setSpecDialogCategory] = useState<string | null>(null);
   const [renameSpecId, setRenameSpecId] = useState<string | null>(null);
   const [deleteSpecId, setDeleteSpecId] = useState<string | null>(null);
+  const [settingsCategory, setSettingsCategory] = useState<string | null>(null);
 
   const tree = useMemo(() => buildTree(specs), [specs]);
   const topLevel = useMemo(
@@ -309,6 +398,7 @@ export function Sidebar() {
             onAddSpec={setSpecDialogCategory}
             onRenameSpec={setRenameSpecId}
             onDeleteSpec={setDeleteSpecId}
+            onSettings={setSettingsCategory}
             issuesBySpecId={issuesBySpecId}
           />
         ))}
@@ -343,6 +433,12 @@ export function Sidebar() {
         <DeleteSpecDialog
           specId={deleteSpecId}
           onClose={() => setDeleteSpecId(null)}
+        />
+      )}
+      {settingsCategory !== null && (
+        <CategorySettingsDialog
+          category={settingsCategory}
+          onClose={() => setSettingsCategory(null)}
         />
       )}
     </aside>

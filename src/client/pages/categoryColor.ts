@@ -1,6 +1,10 @@
-/** Maps a category name to a stable palette color (used for graph node color-coding). */
+/**
+ * Default category color palette + a stable hash-based fallback.
+ * User-set colors (from a category index `_.mdx` front-matter) take precedence;
+ * see useCategoryStyles. This module provides the fallback when none is set.
+ */
 
-const PALETTE = [
+export const PALETTE = [
   '#4f46e5', // indigo (accent)
   '#0891b2', // cyan
   '#16a34a', // green
@@ -21,6 +25,7 @@ function hash(s: string): number {
   return Math.abs(h);
 }
 
-export function categoryColor(category: string): string {
+/** Deterministic fallback color derived from the category name. */
+export function hashCategoryColor(category: string): string {
   return PALETTE[hash(category) % PALETTE.length];
 }

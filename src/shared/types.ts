@@ -50,6 +50,18 @@ export interface CreateCategoryRequest {
   path: string;
 }
 
+/**
+ * Request body for PUT /api/categories/<category> — merges presentation metadata
+ * (icon / color) into the category index `_.mdx` front-matter.
+ * A null or empty string removes that key. The root category uses the empty path.
+ */
+export interface SaveCategorySettingsRequest {
+  /** lucide icon name (kebab-case), e.g. "database". null/'' clears it. */
+  icon?: string | null;
+  /** hex color "#rrggbb". null/'' clears it (falls back to the hash palette). */
+  color?: string | null;
+}
+
 /** Response for GET /api/data: data[category][slug] = front-matter */
 export type AllData = Record<string, Record<string, Record<string, unknown>>>;
 
