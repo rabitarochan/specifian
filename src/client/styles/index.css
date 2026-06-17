@@ -1611,6 +1611,17 @@ select.sb-cell-input {
   border-radius: var(--radius);
   overflow: hidden;
 }
+/* Make the CodeMirror fill the fixed-height box and scroll (vertical + horizontal)
+   instead of growing with content and being clipped by overflow:hidden. */
+.sb-guide-panel__editor .sb-editor {
+  height: 100%;
+}
+.sb-guide-panel__editor .cm-editor {
+  height: 100%;
+}
+.sb-guide-panel__editor .cm-scroller {
+  overflow: auto;
+}
 .sb-guide-panel__actions {
   display: flex;
   justify-content: flex-end;
