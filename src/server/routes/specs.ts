@@ -95,7 +95,9 @@ export function specsRouter(specsDir: string): Router {
   });
 
   // GET /api/specs/* — get single spec
-  router.get('/*', async (req: Request, res: Response) => {
+  // Express 5 (path-to-regexp v8) drops the bare '/*' string wildcard; use a
+  // regex route so the captured splat stays available as req.params[0].
+  router.get(/^\/(.+)$/, async (req: Request, res: Response) => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
       res.status(400).json({ error: 'Path is required' });
@@ -129,7 +131,7 @@ export function specsRouter(specsDir: string): Router {
   });
 
   // PUT /api/specs/* — save spec
-  router.put('/*', async (req: Request, res: Response) => {
+  router.put(/^\/(.+)$/, async (req: Request, res: Response) => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
       res.status(400).json({ error: 'Path is required' });
@@ -202,7 +204,7 @@ export function specsRouter(specsDir: string): Router {
   });
 
   // DELETE /api/specs/* — delete spec
-  router.delete('/*', async (req: Request, res: Response): Promise<void> => {
+  router.delete(/^\/(.+)$/, async (req: Request, res: Response): Promise<void> => {
     const paramPath = (req.params as Record<string, string>)[0] ?? '';
     if (!paramPath) {
       res.status(400).json({ error: 'Path is required' });

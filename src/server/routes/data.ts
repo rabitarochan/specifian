@@ -22,8 +22,10 @@ export function dataRouter(specsDir: string): Router {
     }
   });
 
-  // GET /api/data/* — data for a category
-  router.get('/*', async (req: Request, res: Response) => {
+  // GET /api/data/* — data for a category (root category captures as empty)
+  // Express 5 (path-to-regexp v8) drops the bare '/*' string wildcard; use a
+  // regex route so the captured splat stays available as req.params[0].
+  router.get(/^\/(.*)$/, async (req: Request, res: Response) => {
     const categoryPath = ((req.params as Record<string, string>)[0] ?? '')
       .split('/')
       .filter(Boolean)
