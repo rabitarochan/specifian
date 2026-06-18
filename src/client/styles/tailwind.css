@@ -15,6 +15,10 @@
 :root {
   --radius: 6px;
 
+  /* Fixed reading-column width for spec/markdown content. Kept content-independent
+     so a page's width never shifts based on what components it renders. */
+  --spec-width: 960px;
+
   --background: #ffffff;
   --foreground: #1f2937;
 
@@ -108,7 +112,13 @@
 @layer components {
   .sb-prose {
     line-height: 1.8;
+    /* Keep the column width content-independent: long tokens wrap and any wide
+       child is clamped to the column instead of widening the page. */
+    overflow-wrap: anywhere;
 
+    & > * {
+      max-width: 100%;
+    }
     & > :first-child {
       margin-top: 0;
     }
