@@ -36,7 +36,7 @@ program
       process.exit(1);
     }
 
-    console.log(`\n🗒  specifian v${VERSION}`);
+    console.log(`\n🗒  Specifian v${VERSION}`);
     console.log(`📂 Specs directory: ${specsDir}`);
     console.log(`🚀 Starting server... http://localhost:${port}\n`);
 
@@ -89,7 +89,7 @@ program
       process.exit(1);
     }
 
-    console.log(`\n🗒  specifian v${VERSION} — static export`);
+    console.log(`\n🗒  Specifian v${VERSION} — static export`);
     console.log(`📂 Specs directory: ${specsDir}`);
     console.log(`📤 Output directory: ${outDir}\n`);
 
@@ -210,7 +210,7 @@ program
     }
 
     // Note: stdout is reserved for the MCP protocol — startup notices must go to stderr.
-    console.error(`specifian MCP server (stdio) — specs: ${specsDir}`);
+    console.error(`Specifian MCP server (stdio) — specs: ${specsDir}`);
 
     try {
       await startMcpServer(specsDir);
@@ -226,7 +226,7 @@ program
 // agents command
 program
   .command('agents')
-  .description('Generate an AGENTS.md that teaches AI agents how to use specifian')
+  .description('Generate an AGENTS.md that teaches AI agents how to use Specifian')
   .option('--out <file>', 'Output file path', './AGENTS.md')
   .action(async (opts: { out: string }) => {
     const outPath = path.resolve(opts.out);

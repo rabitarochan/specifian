@@ -1,5 +1,5 @@
 /**
- * specifian shared type definitions — the source of truth for the API contract.
+ * Specifian shared type definitions — the source of truth for the API contract.
  * Imported by both the server (src/server) and the client (src/client).
  * When changing these, keep docs/DESIGN.md and both implementations in sync.
  */

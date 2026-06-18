@@ -1,4 +1,4 @@
-# specifian
+# Specifian
 
 A design-document management tool — like Storybook — where you write `.mdx` files under a local `.specs/` directory in Markdown and view or edit them in a Web UI. Because **front-matter is treated as structured design data**, it can be consumed via API or fed into code-generation templates.
 
@@ -55,7 +55,7 @@ specifian validate --dir ./.specs
 # Export a read-only static site (host on GitHub Pages, etc.)
 specifian export --dir ./.specs --out ./dist-static
 
-# Generate AGENTS.md so AI agents know how to use specifian in this project
+# Generate AGENTS.md so AI agents know how to use Specifian in this project
 specifian agents --out ./AGENTS.md
 ```
 
@@ -71,11 +71,11 @@ The generated `AGENTS.md` is a **static** how-to: it explains how to register th
 | `specifian validate [--dir ./.specs]` | Validate front-matter against `_schema.json`. Exits with code 1 on violations. |
 | `specifian export [--dir ./.specs] [--out dist-static]` | Export a read-only static site (no server needed). See [Static Site Export](#static-site-export). |
 | `specifian mcp [--dir ./.specs]` | Start an MCP server (stdio) so AI agents can read and write specs. |
-| `specifian agents [--out ./AGENTS.md]` | Generate an `AGENTS.md` that teaches AI agents (Claude Code) how to use specifian: register the MCP server, then at runtime discover categories via `list_guides` and read guides via `get_guide` before authoring. |
+| `specifian agents [--out ./AGENTS.md]` | Generate an `AGENTS.md` that teaches AI agents (Claude Code) how to use Specifian: register the MCP server, then at runtime discover categories via `list_guides` and read guides via `get_guide` before authoring. |
 
 ## .specs/ Directory Structure Rules
 
-Understanding the file layout of `.specs/` is key to working with specifian.
+Understanding the file layout of `.specs/` is key to working with Specifian.
 
 - **`.specs/<category>/`** — A category (folder). Nesting is supported (e.g., `.specs/api/v1/`).
 - **`.specs/<category>/<slug>.mdx`** — A spec. Its ID is `<category>:<slug>` (e.g., `tables:users`).
@@ -295,7 +295,7 @@ or a subpath such as `https://<user>.github.io/<repo>/`. URLs look like
 
 ## REST API
 
-The API provided by the specifian server. All paths are relative to the base URL (e.g., `http://localhost:4400`).
+The API provided by the Specifian server. All paths are relative to the base URL (e.g., `http://localhost:4400`).
 
 | Method | Path | Description |
 |---|---|---|
@@ -326,7 +326,7 @@ All errors are returned in `{ error: string }` format with an appropriate HTTP s
 
 ## MCP Server
 
-specifian includes a built-in MCP (Model Context Protocol) server, allowing AI agents (such as Claude Code) to
+Specifian includes a built-in MCP (Model Context Protocol) server, allowing AI agents (such as Claude Code) to
 safely read and write spec documents. It operates over stdio transport.
 
 ### Starting the Server
@@ -401,7 +401,7 @@ npm run build
 npm start
 ```
 
-Example: starts the production build of specifian using `examples/.specs`.
+Example: starts the production build of Specifian using `examples/.specs`.
 
 ## Technology Stack
 

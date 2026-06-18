@@ -1,19 +1,19 @@
 /**
  * agents.ts — generates a static AGENTS.md that teaches AI agents (e.g. Claude Code)
- * how to work with a specifian project via its MCP server.
+ * how to work with a Specifian project via its MCP server.
  *
  * Deliberately STATIC: it does NOT enumerate the current categories. Instead it
  * instructs the agent to discover the live structure at runtime through the MCP
  * tools (`list_guides`, `get_guide`). That way the file never goes stale when
- * categories are added or removed — regenerate it only when upgrading specifian.
+ * categories are added or removed — regenerate it only when upgrading Specifian.
  */
 
 /** Build the AGENTS.md contents. Pure/static — safe to call without a specs dir. */
 export function generateAgentsDoc(): string {
-  return `# Working with specifian
+  return `# Working with Specifian
 
 This project stores its design documents as MDX "specs" under \`.specs/\`, managed by
-[specifian](https://github.com/rabitarochan/specifian). specifian ships an MCP server
+[Specifian](https://github.com/rabitarochan/specifian). Specifian ships an MCP server
 that lets you (an AI agent) read and write these specs safely. **Prefer the MCP tools
 over editing files directly** — they keep wiki links, schemas, and metadata consistent.
 
@@ -77,6 +77,6 @@ When creating or editing a spec:
 
 > This file is static. The list of categories and their guides is intentionally **not**
 > baked in here — discover it at runtime with \`list_guides\` / \`get_guide\`. Regenerate this
-> file with \`specifian agents\` only when upgrading specifian.
+> file with \`specifian agents\` only when upgrading Specifian.
 `;
 }
