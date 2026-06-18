@@ -19,7 +19,7 @@ export function PageContainer({
       className={cn(
         preview
           ? 'px-7 pb-[60px] pt-6'
-          : 'mx-auto max-w-[820px] px-10 pb-20 pt-8',
+          : 'mx-auto w-full max-w-[var(--spec-width)] px-10 pb-20 pt-8',
         className,
       )}
       {...props}
@@ -39,7 +39,7 @@ export function PageBar({
   return (
     <header
       className={cn(
-        'mx-auto flex max-w-[820px] items-center justify-between gap-4 border-b border-border px-10 pt-5',
+        'mx-auto flex w-full max-w-[var(--spec-width)] items-center justify-between gap-4 border-b border-border px-10 pt-5',
         tight ? 'pb-3.5' : 'pb-0',
         className,
       )}
