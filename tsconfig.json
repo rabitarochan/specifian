@@ -13,10 +13,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"],
-      "@/*": ["src/client/*"]
+      "@shared/*": ["./src/shared/*"],
+      "@/*": ["./src/client/*"]
     }
   },
   "include": ["src"]
