@@ -319,7 +319,7 @@ export function Sidebar() {
           to="/"
           className="text-xl font-bold tracking-tight text-foreground hover:no-underline"
         >
-          specifian
+          Specifian
         </Link>
       </div>
 

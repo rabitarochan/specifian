@@ -1,7 +1,7 @@
 /**
- * mcp.ts — specifian MCP server (stdio transport).
+ * mcp.ts — Specifian MCP server (stdio transport).
  *
- * Lets AI agents (e.g. Claude Code) read and write specifian spec documents
+ * Lets AI agents (e.g. Claude Code) read and write Specifian spec documents
  * via MCP tools.
  *
  * Important: stdout is reserved for the MCP (JSON-RPC) protocol.
@@ -94,7 +94,7 @@ async function findMeta(specsDir: string, id: string): Promise<SpecMeta | null> 
 // ─── Server startup ───────────────────────────────────────────────────────────
 
 /**
- * Start the specifian MCP server on a stdio transport.
+ * Start the Specifian MCP server on a stdio transport.
  * The returned Promise does not resolve until the transport closes (equivalent to process exit).
  *
  * @param specsDir - Absolute path to the specs directory (caller must verify it exists)
