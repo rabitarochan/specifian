@@ -83,7 +83,7 @@
     "mermaid": "^11.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^6.28.0",
+    "react-router-dom": "^7.18.0",
     "remark-mdx-frontmatter": "^5.0.0",
     "sucrase": "^3.35.0",
     "tailwind-merge": "^3.6.0",
