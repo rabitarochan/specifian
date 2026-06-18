@@ -163,7 +163,8 @@ function CategoryNode({
   onSettings: (category: string) => void;
   issuesBySpecId: Record<string, ValidationIssue[]>;
 }) {
-  const { categoryColor, categoryIcon } = useCategoryStyles();
+  const { categoryColor, categoryIcon, categoryName } = useCategoryStyles();
+  const displayName = categoryName(node.path) ?? node.name;
   const sortedChildren = useMemo(
     () => [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name)),
     [node],
@@ -192,7 +193,7 @@ function CategoryNode({
               size={14}
             />
           </span>
-          {node.name}
+          {displayName}
         </NavLink>
         {!READONLY && (
           <>
@@ -207,7 +208,7 @@ function CategoryNode({
                     onSettings(node.path);
                   }}
                 >
-                  Icon &amp; color…
+                  Settings…
                 </button>
               )}
             </RowMenu>
