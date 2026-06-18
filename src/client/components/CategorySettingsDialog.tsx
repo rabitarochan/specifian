@@ -1,7 +1,7 @@
 /**
- * Dialog for setting a category's icon + color. Persists into the category index
- * (_.mdx) front-matter via PUT /api/categories/<category>. The Sidebar and Link Graph
- * update live afterwards (watcher → SpecsProvider refetch).
+ * Dialog for setting a category's display name + icon + color. Persists into the
+ * category index (_.mdx) front-matter via PUT /api/categories/<category>. The Sidebar
+ * and Link Graph update live afterwards (watcher → SpecsProvider refetch).
  */
 import { useMemo, useState, type FormEvent } from 'react';
 import { DynamicIcon, type IconName } from 'lucide-react/dynamic';
@@ -48,6 +48,7 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
     () => specs.find((s) => s.isIndex && s.category === category),
     [specs, category],
   );
+  const [name, setName] = useState<string>(asString(indexSpec?.data['name']));
   const [icon, setIcon] = useState<string>(asString(indexSpec?.data['icon']));
   const [color, setColor] = useState<string>(asString(indexSpec?.data['color']));
   const [query, setQuery] = useState('');
@@ -60,14 +61,18 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
   }, [query]);
 
   const effectiveColor = color || hashCategoryColor(category);
+  /** Folder path, used to identify the category in the title. */
   const label = category === '' ? '(root)' : category;
+  /** Last path segment — the default sidebar label when no name is set. */
+  const fallbackName = category === '' ? '(root)' : (category.split('/').pop() ?? category);
+  const previewName = name.trim() || fallbackName;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      await saveCategorySettings(category, { icon, color });
+      await saveCategorySettings(category, { name, icon, color });
       show(`Updated "${label}"`);
       onClose();
     } catch (err) {
@@ -101,8 +106,23 @@ export function CategorySettingsDialog({ category, onClose }: Props) {
                 }}
               />
             )}
-            <span>{label}</span>
+            <span>{previewName}</span>
           </div>
+        </div>
+
+        {/* Name */}
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="category-name">Name</Label>
+          <Input
+            id="category-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={fallbackName}
+          />
+          <span className="text-xs text-muted-foreground">
+            Display name shown in the sidebar. Empty uses the folder name
+            (<code>{fallbackName}</code>).
+          </span>
         </div>
 
         {/* Color */}
