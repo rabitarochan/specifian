@@ -1,0 +1,62 @@
+name: Deploy demo to GitHub Pages
+
+# Builds the client, exports the example specs (examples/.specs) as a read-only
+# static site with `specifian export`, and publishes it to GitHub Pages. The
+# export uses a relative asset base and HashRouter, so it works unmodified from
+# the project-pages subpath (https://<user>.github.io/<repo>/).
+#
+# One-time setup: repo Settings -> Pages -> Source = "GitHub Actions".
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; don't cancel an in-progress run so a live
+# deploy is never left half-finished.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Use `npm install` rather than `npm ci`: transitive WASM-fallback optional
+      # deps (e.g. @emnapi/*, pulled by Vite/rolldown native bindings) re-resolve
+      # to different patch versions across npm releases, matching release.yml.
+      - run: npm install --no-audit --no-fund
+
+      - name: Build CLI and client
+        run: npm run build
+
+      - name: Export example specs to a static site
+        run: node dist/cli/index.js export --dir examples/.specs --out dist-static
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist-static
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
