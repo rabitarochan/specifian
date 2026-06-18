@@ -3,6 +3,9 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { createCategory } from '../api';
 import { ApiHttpError } from '../api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Props {
   onClose: () => void;
@@ -40,28 +43,28 @@ export function NewCategoryDialog({ onClose, onCreated }: Props) {
 
   return (
     <Modal title="New Category" onClose={onClose}>
-      <form onSubmit={submit} className="sb-form">
-        <label className="sb-field">
-          <span className="sb-field__label">Category path</span>
-          <input
-            className="sb-input"
+      <form onSubmit={submit} className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="new-cat-path">Category path</Label>
+          <Input
+            id="new-cat-path"
             value={path}
             onChange={(e) => setPath(e.target.value)}
             placeholder="tables / api/v1"
             autoFocus
           />
-          <span className="sb-field__hint">
+          <span className="text-xs text-muted-foreground">
             Use <code>/</code> to nest, e.g. <code>api/v1</code>.
           </span>
-        </label>
-        {error && <p className="sb-form__error">{error}</p>}
-        <div className="sb-form__actions">
-          <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
+        </div>
+        {error && <p className="text-destructive text-[13px] m-0">{error}</p>}
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
+          </Button>
+          <Button type="submit" disabled={busy}>
             Create
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

@@ -4,8 +4,9 @@
  * Header has a "New Category" button; each category has an "Add Spec" button.
  * Spec rows have a "⋯" hover menu (Rename / Delete).
  */
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState, useEffect, useRef, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Search, Plus, MoreHorizontal, TriangleAlert } from 'lucide-react';
 import type { SpecMeta } from '@shared/types';
 import { specRoute } from '@shared/types';
 import type { ValidationIssue } from '@shared/types';
@@ -18,7 +19,9 @@ import { RenameSpecDialog } from './RenameSpecDialog';
 import { DeleteSpecDialog } from './DeleteSpecDialog';
 import { CategorySettingsDialog } from './CategorySettingsDialog';
 import { CategoryIcon } from './CategoryIcon';
+import { Button } from './ui/button';
 import { useCategoryStyles } from '../hooks/useCategoryStyles';
+import { cn } from '../lib/utils';
 import { READONLY } from '../env';
 
 interface TreeNode {
@@ -72,25 +75,19 @@ function IssueBadge({ issues }: { issues: ValidationIssue[] }) {
     .map((i) => `${i.path}: ${i.message}`)
     .join('\n')}`;
   return (
-    <span className="sb-issue-badge" title={title} aria-label={title}>
-      ⚠
+    <span title={title} aria-label={title} className="inline-flex align-middle">
+      <TriangleAlert className="ml-1.5 size-3 text-amber-600" />
     </span>
   );
 }
 
-/**
- * ⋯ popover menu that appears on hover for a spec row.
- * Provides two actions: Rename and Delete.
- * Closes on outside click or Escape.
- */
-function SpecRowMenu({
-  specId,
-  onRename,
-  onDelete,
+/** Shared row popover menu (positioned under a "⋯" trigger). */
+function RowMenu({
+  ariaLabel,
+  children,
 }: {
-  specId: string;
-  onRename: (id: string) => void;
-  onDelete: (id: string) => void;
+  ariaLabel: string;
+  children: (close: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -118,11 +115,14 @@ function SpecRowMenu({
   }, [open]);
 
   return (
-    <div className="sb-row-menu-wrap" ref={menuRef}>
-      <button
-        className="sb-icon-btn sb-tree__more"
+    <div className="relative flex items-center" ref={menuRef}>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 data-[open=true]:opacity-100"
+        data-open={open}
         title="Menu"
-        aria-label="Open menu"
+        aria-label={ariaLabel}
         aria-haspopup="true"
         aria-expanded={open}
         onClick={(e) => {
@@ -131,106 +131,22 @@ function SpecRowMenu({
           setOpen((v) => !v);
         }}
       >
-        ⋯
-      </button>
+        <MoreHorizontal />
+      </Button>
       {open && (
-        <div className="sb-row-menu" role="menu">
-          <button
-            className="sb-row-menu__item"
-            role="menuitem"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              onRename(specId);
-            }}
-          >
-            Rename
-          </button>
-          <button
-            className="sb-row-menu__item sb-row-menu__item--danger"
-            role="menuitem"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              onDelete(specId);
-            }}
-          >
-            Delete
-          </button>
+        <div
+          role="menu"
+          className="absolute right-0 top-[calc(100%+2px)] z-[200] min-w-[120px] overflow-hidden rounded-md border border-input bg-popover py-1 shadow-[0_4px_16px_rgba(0,0,0,0.14)]"
+        >
+          {children(() => setOpen(false))}
         </div>
       )}
     </div>
   );
 }
 
-/**
- * ⋯ popover menu for a category row. Single action: open the icon/color settings.
- * Closes on outside click or Escape (mirrors SpecRowMenu).
- */
-function CategoryRowMenu({
-  category,
-  onSettings,
-}: {
-  category: string;
-  onSettings: (category: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open]);
-
-  return (
-    <div className="sb-row-menu-wrap" ref={menuRef}>
-      <button
-        className="sb-icon-btn sb-tree__more"
-        title="Menu"
-        aria-label="Open category menu"
-        aria-haspopup="true"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
-      >
-        ⋯
-      </button>
-      {open && (
-        <div className="sb-row-menu" role="menu">
-          <button
-            className="sb-row-menu__item"
-            role="menuitem"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-              onSettings(category);
-            }}
-          >
-            Icon &amp; color…
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
+const menuItemClass =
+  'block w-full px-3.5 py-1.5 text-left text-[13.5px] text-foreground transition-colors hover:bg-muted';
 
 function CategoryNode({
   node,
@@ -247,7 +163,8 @@ function CategoryNode({
   onSettings: (category: string) => void;
   issuesBySpecId: Record<string, ValidationIssue[]>;
 }) {
-  const { categoryColor, categoryIcon } = useCategoryStyles();
+  const { categoryColor, categoryIcon, categoryName } = useCategoryStyles();
+  const displayName = categoryName(node.path) ?? node.name;
   const sortedChildren = useMemo(
     () => [...node.children.values()].sort((a, b) => a.name.localeCompare(b.name)),
     [node],
@@ -258,38 +175,58 @@ function CategoryNode({
   );
 
   return (
-    <li className="sb-tree__item">
-      <div className="sb-tree__row">
+    <li>
+      <div className="group flex items-center gap-0.5">
         <NavLink
           to={`/specs/${node.path}`}
           className={({ isActive }) =>
-            isActive ? 'sb-tree__cat sb-tree__cat--active' : 'sb-tree__cat'
+            cn(
+              'block flex-1 truncate rounded-md px-2 py-1.5 text-sm font-semibold text-foreground hover:bg-accent hover:no-underline',
+              isActive && 'text-primary',
+            )
           }
         >
-          <span className="sb-tree__cat-icon" aria-hidden="true">
+          <span className="mr-1.5 inline-flex w-4 items-center justify-center align-middle" aria-hidden="true">
             <CategoryIcon
               name={categoryIcon(node.path)}
               color={categoryColor(node.path)}
               size={14}
             />
           </span>
-          {node.name}
+          {displayName}
         </NavLink>
         {!READONLY && (
           <>
-            <CategoryRowMenu category={node.path} onSettings={onSettings} />
-            <button
-              className="sb-icon-btn sb-tree__add"
+            <RowMenu ariaLabel="Open category menu">
+              {(close) => (
+                <button
+                  className={menuItemClass}
+                  role="menuitem"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    close();
+                    onSettings(node.path);
+                  }}
+                >
+                  Settings…
+                </button>
+              )}
+            </RowMenu>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
               title="Add spec"
+              aria-label="Add spec"
               onClick={() => onAddSpec(node.path)}
             >
-              ＋
-            </button>
+              <Plus />
+            </Button>
           </>
         )}
       </div>
       {(sortedChildren.length > 0 || sortedSpecs.length > 0) && (
-        <ul className="sb-tree__children">
+        <ul className="ml-2 list-none border-l border-border pl-3">
           {sortedChildren.map((child) => (
             <CategoryNode
               key={child.path}
@@ -304,22 +241,51 @@ function CategoryNode({
           {sortedSpecs.map((s) => {
             const issues = issuesBySpecId[s.id];
             return (
-              <li key={s.id} className="sb-tree__spec">
+              <li key={s.id} className="group relative flex items-center">
                 <NavLink
                   to={specRoute(s.id)}
                   className={({ isActive }) =>
-                    isActive ? 'sb-tree__speclink sb-tree__speclink--active' : 'sb-tree__speclink'
+                    cn(
+                      'block min-w-0 flex-1 truncate rounded-md px-2 py-1 text-[13.5px] text-muted-foreground hover:bg-accent hover:text-foreground hover:no-underline',
+                      isActive && 'bg-accent font-semibold text-primary',
+                    )
                   }
                 >
                   {s.title}
                   {issues && issues.length > 0 && <IssueBadge issues={issues} />}
                 </NavLink>
                 {!READONLY && (
-                  <SpecRowMenu
-                    specId={s.id}
-                    onRename={onRenameSpec}
-                    onDelete={onDeleteSpec}
-                  />
+                  <RowMenu ariaLabel="Open menu">
+                    {(close) => (
+                      <>
+                        <button
+                          className={menuItemClass}
+                          role="menuitem"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            close();
+                            onRenameSpec(s.id);
+                          }}
+                        >
+                          Rename
+                        </button>
+                        <button
+                          className={cn(
+                            menuItemClass,
+                            'text-destructive hover:bg-destructive/10',
+                          )}
+                          role="menuitem"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            close();
+                            onDeleteSpec(s.id);
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </RowMenu>
                 )}
               </li>
             );
@@ -348,27 +314,36 @@ export function Sidebar() {
   );
 
   return (
-    <aside className="sb-sidebar">
-      <div className="sb-sidebar__brand">
-        <Link to="/" className="sb-sidebar__brand-link">
-          specifian
+    <aside className="h-full w-[260px] shrink-0 overflow-y-auto border-r border-border bg-sidebar px-3 pb-8 pt-4">
+      <div className="px-2 pb-4 pt-1">
+        <Link
+          to="/"
+          className="text-xl font-bold tracking-tight text-foreground hover:no-underline"
+        >
+          Specifian
         </Link>
       </div>
 
-      <button className="sb-search-btn" onClick={openPalette}>
-        <span className="sb-search-btn__icon" aria-hidden="true">
-          🔍
-        </span>
-        <span className="sb-search-btn__label">Search</span>
-        <kbd className="sb-kbd">Ctrl+K</kbd>
+      <button
+        onClick={openPalette}
+        className="mb-3.5 flex w-full items-center gap-2 rounded-md border border-input bg-background px-2.5 py-1.5 text-muted-foreground transition-colors hover:border-primary hover:bg-accent"
+      >
+        <Search className="size-3.5" aria-hidden="true" />
+        <span className="flex-1 text-left text-[13.5px]">Search</span>
+        <kbd className="rounded border border-b-2 border-border bg-muted px-1.5 py-px font-mono text-[11px] text-muted-foreground">
+          Ctrl+K
+        </kbd>
       </button>
 
-      <nav className="sb-sidebar__nav">
+      <nav className="mb-[18px] flex flex-col gap-0.5">
         <NavLink
           to="/"
           end
           className={({ isActive }) =>
-            isActive ? 'sb-nav-link sb-nav-link--active' : 'sb-nav-link'
+            cn(
+              'block rounded-md px-2.5 py-1.5 font-medium text-foreground hover:bg-accent hover:no-underline',
+              isActive && 'bg-accent text-primary',
+            )
           }
         >
           Home
@@ -376,29 +351,34 @@ export function Sidebar() {
         <NavLink
           to="/graph"
           className={({ isActive }) =>
-            isActive ? 'sb-nav-link sb-nav-link--active' : 'sb-nav-link'
+            cn(
+              'block rounded-md px-2.5 py-1.5 font-medium text-foreground hover:bg-accent hover:no-underline',
+              isActive && 'bg-accent text-primary',
+            )
           }
         >
           Graph
         </NavLink>
       </nav>
 
-      <div className="sb-sidebar__section-head">
+      <div className="flex items-center justify-between px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         <span>Categories</span>
         {!READONLY && (
-          <button
-            className="sb-icon-btn"
+          <Button
+            variant="ghost"
+            size="icon"
             title="New category"
+            aria-label="New category"
             onClick={() => setShowCategory(true)}
           >
-            ＋
-          </button>
+            <Plus />
+          </Button>
         )}
       </div>
 
-      <ul className="sb-tree">
+      <ul className="list-none">
         {topLevel.length === 0 && (
-          <li className="sb-tree__empty">No categories</li>
+          <li className="px-2.5 py-1.5 text-[13px] text-muted-foreground">No categories</li>
         )}
         {topLevel.map((node) => (
           <CategoryNode

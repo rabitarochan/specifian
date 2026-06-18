@@ -27,7 +27,11 @@ export function SpecLink({ to, children }: { to: string; children?: ReactNode })
     <Link
       to={specRoute(to)}
       onClick={handleClick}
-      className={exists ? 'sb-wikilink' : 'sb-wikilink sb-wikilink--broken'}
+      className={
+        exists
+          ? 'text-primary border-b border-transparent hover:border-primary hover:no-underline'
+          : 'text-destructive border-b border-dashed border-destructive hover:bg-[#fef2f2] hover:no-underline'
+      }
       title={exists ? undefined : `Unresolved link: ${to}`}
     >
       {label}

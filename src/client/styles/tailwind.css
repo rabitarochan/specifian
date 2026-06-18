@@ -1,0 +1,228 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Tailwind v4 + shadcn token layer.
+ *
+ * The whole client is now styled with Tailwind utilities + these tokens; the
+ * legacy `index.css` has been removed. The palette mirrors the original indigo
+ * theme. MDX prose typography (which targets generated HTML) lives in the
+ * `@layer components` block near the bottom of this file.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 6px;
+
+  /* Fixed reading-column width for spec/markdown content. Kept content-independent
+     so a page's width never shifts based on what components it renders. */
+  --spec-width: 960px;
+
+  --background: #ffffff;
+  --foreground: #1f2937;
+
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f6f7f9;
+  --secondary-foreground: #1f2937;
+
+  --muted: #f9fafb;
+  --muted-foreground: #6b7280;
+
+  /* shadcn "accent" = subtle hover surface; matches --accent-weak */
+  --accent: #eef2ff;
+  --accent-foreground: #4f46e5;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --border: #e5e7eb;
+  --input: #d1d5db;
+  --ring: #4f46e5;
+
+  --sidebar: #f6f7f9;
+  --sidebar-foreground: #1f2937;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
+  --font-sans: "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui,
+    -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", Menlo, monospace;
+}
+
+/* ===== Base document styling (replaces the old index.css body rules) ===== */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/*
+ * ===== MDX prose body =====
+ * The MDX renderer outputs raw HTML (h1/p/ul/code/table/…) that we can't put
+ * utility classes on, so its typography lives here as a component. It sits in
+ * the `components` layer, below `utilities`, so any component that renders its
+ * own DOM with utility classes (TableDefinition, DataView, …) wins over these
+ * element selectors.
+ */
+@layer components {
+  .sb-prose {
+    line-height: 1.8;
+    /* Keep the column width content-independent: long tokens wrap and any wide
+       child is clamped to the column instead of widening the page. */
+    overflow-wrap: anywhere;
+
+    & > * {
+      max-width: 100%;
+    }
+    & > :first-child {
+      margin-top: 0;
+    }
+    & h1 {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 2em 0 0.6em;
+      line-height: 1.3;
+    }
+    & h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 1.8em 0 0.6em;
+      padding-bottom: 0.3em;
+      border-bottom: 1px solid var(--border);
+    }
+    & h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 1.6em 0 0.5em;
+    }
+    & h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin: 1.4em 0 0.5em;
+    }
+    & p {
+      margin: 0.9em 0;
+    }
+    & a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    & a:hover {
+      text-decoration: underline;
+    }
+    & ul,
+    & ol {
+      margin: 0.9em 0;
+      padding-left: 1.6em;
+    }
+    & li {
+      margin: 0.3em 0;
+    }
+    & blockquote {
+      margin: 1em 0;
+      padding: 0.4em 1em;
+      border-left: 3px solid var(--primary);
+      background: var(--accent);
+      color: #3730a3;
+    }
+    & blockquote p {
+      margin: 0.4em 0;
+    }
+    & hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2em 0;
+    }
+    & code {
+      font-family: var(--font-mono);
+      font-size: 0.88em;
+      background: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1em 0.35em;
+    }
+    & pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 1.1em 0;
+      line-height: 1.55;
+    }
+    & pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      color: inherit;
+      font-size: 13px;
+    }
+    & table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1.2em 0;
+      font-size: 14px;
+    }
+    & th,
+    & td {
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    & th {
+      background: var(--muted);
+      font-weight: 600;
+    }
+    & tr:nth-child(even) td {
+      background: var(--muted);
+    }
+    & img {
+      max-width: 100%;
+    }
+  }
+}

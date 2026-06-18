@@ -158,7 +158,7 @@ export function createCategory(body: CreateCategoryRequest): Promise<void> {
 }
 
 /**
- * PUT /api/categories/<category> — merge icon/color into the category index
+ * PUT /api/categories/<category> — merge name/icon/color into the category index
  * (_.mdx) front-matter. Root category uses the empty path. Returns the updated SpecMeta.
  */
 export function saveCategorySettings(

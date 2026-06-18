@@ -22,6 +22,7 @@ import type { Graph, GraphNode } from '@shared/types';
 import { fetchGraph, ApiHttpError } from '../api';
 import { useCategoryStyles } from '../hooks/useCategoryStyles';
 import { GraphPreviewPane } from '../components/GraphPreviewPane';
+import { PageContainer, PageBar, PageTitle, Loading } from '../components/Page';
 
 interface SimNode extends SimulationNodeDatum {
   id: string;
@@ -229,34 +230,39 @@ export function GraphPage() {
 
   if (error) {
     return (
-      <article className="sb-content">
-        <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">Graph Error</div>
-          <div className="sb-error-panel__message">{error}</div>
+      <PageContainer>
+        <div
+          className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
+          role="alert"
+        >
+          <div className="mb-1 font-bold text-destructive">Graph Error</div>
+          <div className="whitespace-pre-wrap font-mono text-[13px] text-[#991b1b]">
+            {error}
+          </div>
         </div>
-      </article>
+      </PageContainer>
     );
   }
 
-  if (!graph) return <div className="sb-loading">Loading…</div>;
+  if (!graph) return <Loading />;
 
   const nodes = nodesRef.current;
   const links = linksRef.current;
 
   return (
-    <div className="sb-graph-page">
-      <header className="sb-page-bar">
-        <h1 className="sb-page-bar__title">Link Graph</h1>
-        <span className="sb-graph-hint">
+    <div className="flex h-full flex-col">
+      <PageBar tight>
+        <PageTitle>Link Graph</PageTitle>
+        <span className="text-xs text-muted-foreground">
           Click to preview / Drag node to reposition / Drag background to pan /
           Scroll to zoom
         </span>
-      </header>
-      <div className="sb-graph-split">
-      <div className="sb-graph-canvas">
+      </PageBar>
+      <div className="flex min-h-0 flex-1">
+      <div className="min-h-0 min-w-0 flex-1 [background:radial-gradient(circle,#e5e7eb_1px,transparent_1px)_0_0/24px_24px,#fff]">
         <svg
           ref={svgRef}
-          className="sb-graph-svg"
+          className="block size-full touch-none select-none"
           viewBox={`${view.x} ${view.y} ${view.w} ${view.h}`}
           onWheel={onWheel}
           onPointerDown={onBackgroundPointerDown}
@@ -277,7 +283,7 @@ export function GraphPage() {
                   y1={s.y}
                   x2={t.x}
                   y2={t.y}
-                  className="sb-graph-edge"
+                  className="stroke-[#d1d5db] [stroke-width:1.5]"
                   opacity={dim ? 0.08 : 0.5}
                 />
               );
@@ -293,7 +299,7 @@ export function GraphPage() {
                 <g
                   key={n.id}
                   transform={`translate(${n.x ?? 0}, ${n.y ?? 0})`}
-                  className="sb-graph-node"
+                  className="[&_circle]:transition-opacity [&_circle]:duration-150"
                   opacity={dim ? 0.2 : 1}
                   onPointerDown={(e) => onNodePointerDown(e, n)}
                   onMouseEnter={() => setHovered(n.id)}
@@ -332,7 +338,11 @@ export function GraphPage() {
                       <DynamicIcon name={icon as IconName} color="#fff" size={24} />
                     </svg>
                   )}
-                  <text className="sb-graph-label" x={18} y={4}>
+                  <text
+                    className="pointer-events-none fill-[#1f2937] font-sans [font-size:12px]"
+                    x={18}
+                    y={4}
+                  >
                     {n.title}
                   </text>
                 </g>

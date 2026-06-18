@@ -1,4 +1,4 @@
-# specifian Design Document
+# Specifian Design Document
 
 A web tool that displays and edits `.mdx` files under a local `.specs/` directory as documentation, similar to Storybook.
 It treats front-matter as "structured design data" that can be referenced from React components and leveraged for API responses and code generation.
@@ -263,7 +263,7 @@ and manage them under the same `.specs/` directory as sidecar files in Git.
 
 ### Concept
 
-Enable AI agents to safely read and write specifian content (MCP + lint).
+Enable AI agents to safely read and write Specifian content (MCP + lint).
 Also provide "document restructuring" operations (rename, delete) needed by both humans and agents.
 
 ### Shared Server Modules (used by both routes and MCP)
@@ -341,10 +341,19 @@ Describe what to record in this category and the design conventions.
 
 ### Web UI
 
-- **Home page** — renders the root `_guide.md` below the `_.mdx` content (or as the main content when `_.mdx` is absent).
-- **Category index page** — renders the category `_guide.md` below the `_.mdx` content (or as the main content).
-- **Editor** — adds a **[Guide]** tab to the left pane when editing a spec, showing the category guide as read-only reference. The root guide appears on the Home/root editor.
-- Style: rendered as standard Markdown prose; visually distinct from spec content (e.g., light background tint).
+The guide is shown in a **right-docked drawer** (`GuideDrawer`, state in `GuideProvider`)
+rather than inline in the content flow — so a long guide never pushes the spec out of
+view, and it can stay open while a spec is being written or edited.
+
+- **Active category** — each route page registers its category via `useRegisterGuideCategory(category)`
+  (`IndexPage` uses `""` for the root/Home and the category path otherwise; `SpecPage` uses its
+  spec's category). The drawer fetches that category's `_guide.md` and live-refreshes on its `FsEvent`.
+- **Toggle** — opened from the **Guide** button in the page bar (present on every `IndexPage` /
+  `SpecPage` header); when closed nothing is docked. Open → a fixed-width (380px) independently
+  scrolling panel pushes the content column. Open/closed state is persisted in `localStorage` so it
+  survives navigation.
+- **Edit** — the drawer hosts the guide editor (Save → `PUT /api/guide`); hidden under `READONLY`.
+- Style: rendered as standard Markdown prose, with an accent-tinted header to distinguish it from spec content.
 
 ### `specifian agents` — Static AGENTS.md Generator
 
@@ -425,7 +434,7 @@ and the client both call.
 - `ws.ts` — `subscribeFsEvents` is a no-op in static mode.
 - `mdx/userComponents.ts` — fetches `data/components.json` in static mode.
 - Editing UI is hidden behind `READONLY` (Sidebar add/menu buttons, SpecPage
-  edit/save, CategoryIndexPage, GuidePanel, Drawing). SpecPage never enters edit mode
+  edit/save, IndexPage, GuideDrawer, Drawing). SpecPage never enters edit mode
   even if `?edit=1` is present.
 
 ### Hosting

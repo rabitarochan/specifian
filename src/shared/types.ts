@@ -1,5 +1,5 @@
 /**
- * specifian shared type definitions — the source of truth for the API contract.
+ * Specifian shared type definitions — the source of truth for the API contract.
  * Imported by both the server (src/server) and the client (src/client).
  * When changing these, keep docs/DESIGN.md and both implementations in sync.
  */
@@ -52,10 +52,12 @@ export interface CreateCategoryRequest {
 
 /**
  * Request body for PUT /api/categories/<category> — merges presentation metadata
- * (icon / color) into the category index `_.mdx` front-matter.
+ * (name / icon / color) into the category index `_.mdx` front-matter.
  * A null or empty string removes that key. The root category uses the empty path.
  */
 export interface SaveCategorySettingsRequest {
+  /** Sidebar display name. null/'' clears it (falls back to the folder segment). */
+  name?: string | null;
   /** lucide icon name (kebab-case), e.g. "database". null/'' clears it. */
   icon?: string | null;
   /** hex color "#rrggbb". null/'' clears it (falls back to the hash palette). */

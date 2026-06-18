@@ -1,14 +1,19 @@
-/** Overall layout: fixed left sidebar + right content area (Outlet). */
+/** Overall layout: fixed left sidebar + content area (Outlet) + right guide drawer. */
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { GuideProvider } from './GuideProvider';
+import { GuideDrawer } from './GuideDrawer';
 
 export function Layout() {
   return (
-    <div className="sb-app">
-      <Sidebar />
-      <main className="sb-main">
-        <Outlet />
-      </main>
-    </div>
+    <GuideProvider>
+      <div className="flex h-full">
+        <Sidebar />
+        <main className="h-full min-w-0 flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+        <GuideDrawer />
+      </div>
+    </GuideProvider>
   );
 }

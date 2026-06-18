@@ -35,7 +35,6 @@ function Swatch({ color, size }: { color: string; size: number }) {
   const dot = Math.round(size * 0.7);
   return (
     <span
-      className="sb-cat-swatch"
       aria-hidden="true"
       style={{
         display: 'inline-block',

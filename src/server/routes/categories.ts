@@ -122,7 +122,7 @@ export function categoriesRouter(specsDir: string): Router {
     return category;
   }
 
-  // PUT /api/categories/<category> — merge icon/color into the category index
+  // PUT /api/categories/<category> — merge name/icon/color into the category index
   // (_.mdx) front-matter. Creates _.mdx from the default template when absent.
   router.put(/^(\/.*)?$/, async (req: Request, res: Response): Promise<void> => {
     const category = resolveCategory(req, res);
@@ -174,12 +174,16 @@ export function categoriesRouter(specsDir: string): Router {
       res.status(400).json({ error: `Failed to parse front-matter: ${String(err)}` });
       return;
     }
-    const apply = (key: 'icon' | 'color', value: string | null | undefined): void => {
+    const apply = (
+      key: 'name' | 'icon' | 'color',
+      value: string | null | undefined,
+    ): void => {
       if (value === undefined) return; // not provided → leave as-is
       const trimmed = typeof value === 'string' ? value.trim() : '';
       if (trimmed === '') delete data[key];
       else data[key] = trimmed;
     };
+    apply('name', body.name);
     apply('icon', body.icon);
     apply('color', body.color);
 

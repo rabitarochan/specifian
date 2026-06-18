@@ -43,21 +43,24 @@ export function MdxRenderer({ content, specs, category, slug, onWikiNavigate }: 
   // Without this, MDX that references an unloaded component would throw
   // during render, permanently locking the ErrorBoundary in an error state.
   if ((loading && !Content) || !userReady) {
-    return <div className="sb-loading">Compiling…</div>;
+    return <div className="p-10 text-muted-foreground">Compiling…</div>;
   }
   if (!Content) return null;
 
   return (
     <MdxProvider value={{ specs, category, onWikiNavigate }}>
       {userErrors.length > 0 && (
-        <div className="sb-error-panel" role="alert">
-          <div className="sb-error-panel__title">
+        <div
+          className="my-4 rounded-lg border border-[#fecaca] bg-[#fef2f2] px-4 py-3.5"
+          role="alert"
+        >
+          <div className="mb-1 font-bold text-destructive">
             User component compile error
           </div>
-          <ul className="sb-error-panel__list">
+          <ul className="m-0 list-disc pl-[1.3em] text-[13px] text-[#991b1b]">
             {userErrors.map((e) => (
               <li key={e.path}>
-                <code>{e.path}</code>: {e.message}
+                <code className="font-mono">{e.path}</code>: {e.message}
               </li>
             ))}
           </ul>

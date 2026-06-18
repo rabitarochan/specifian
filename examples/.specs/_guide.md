@@ -1,13 +1,13 @@
 ---
 title: Project — Authoring Guide
-description: Project-wide conventions for writing and organizing specs in specifian.
+description: Project-wide conventions for writing and organizing specs in Specifian.
 ---
 
 ## Purpose
 
 This guide covers the conventions that apply to every spec in the `.specs/` directory. Read this first, then read the guide for the specific category you are working in.
 
-specifian organizes design documents as MDX files under `.specs/`. Each subdirectory is a **category** (e.g. `tables/`, `api/`, `screens/`, `architecture/`). Every spec is a single `.mdx` file whose YAML front-matter is treated as structured design data and whose Markdown/JSX body is the human-readable document.
+Specifian organizes design documents as MDX files under `.specs/`. Each subdirectory is a **category** (e.g. `tables/`, `api/`, `screens/`, `architecture/`). Every spec is a single `.mdx` file whose YAML front-matter is treated as structured design data and whose Markdown/JSX body is the human-readable document.
 
 ## What to record
 

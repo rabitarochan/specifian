@@ -8,6 +8,7 @@
  * (via excalidrawModule's loadExcalidraw).
  */
 import { useEffect, useRef, useState } from 'react';
+import { X } from 'lucide-react';
 import type {
   ExcalidrawImperativeAPI,
   ExcalidrawInitialDataState,
@@ -15,6 +16,7 @@ import type {
 import { loadExcalidraw, restoreScene } from '../excalidraw/excalidrawModule';
 import { saveDrawing } from '../api';
 import { useToast } from './Toast';
+import { Button } from '@/components/ui/button';
 
 type ExcalidrawComponent = (typeof import('@excalidraw/excalidraw'))['Excalidraw'];
 type SerializeAsJSON =
@@ -109,46 +111,58 @@ export function DrawingEditorModal({
   };
 
   return (
-    <div className="sb-modal-backdrop" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-foreground/45 flex items-center justify-center z-[900] p-5"
+      onClick={onClose}
+    >
       <div
-        className="sb-drawing-modal"
+        className="flex flex-col w-[94vw] h-[88vh] max-w-[94vw] bg-background rounded-[10px] shadow-[0_12px_40px_rgba(0,0,0,0.25)] overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label={`Edit drawing: ${src}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sb-drawing-modal__head">
-          <h2 className="sb-drawing-modal__title">{src}</h2>
-          <div className="sb-drawing-modal__actions">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border shrink-0">
+          <h2 className="text-[15px] font-bold m-0 font-mono text-foreground truncate">
+            {src}
+          </h2>
+          <div className="flex items-center gap-2 shrink-0">
             {saveError && (
-              <span className="sb-drawing-modal__error">{saveError}</span>
+              <span className="text-destructive text-xs max-w-[320px] truncate">
+                {saveError}
+              </span>
             )}
-            <button
-              className="sb-btn sb-btn--primary"
+            <Button
               onClick={() => void handleSave()}
               disabled={!Excalidraw || saving}
             >
               {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button className="sb-btn" onClick={onClose} disabled={saving}>
+            </Button>
+            <Button variant="outline" onClick={onClose} disabled={saving}>
               Cancel
-            </button>
-            <button
-              className="sb-icon-btn"
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={onClose}
               aria-label="Close"
             >
-              ×
-            </button>
+              <X />
+            </Button>
           </div>
         </div>
-        <div className="sb-drawing-modal__body">
+        <div className="relative flex-1 min-h-0 [&_.excalidraw]:size-full">
           {loadError ? (
-            <div className="sb-mermaid-error" role="alert">
-              <div className="sb-mermaid-error__title">
+            <div
+              className="my-[1.2em] p-3 bg-[#fef2f2] border border-[#fecaca] rounded-lg"
+              role="alert"
+            >
+              <div className="font-semibold text-[#b91c1c] mb-1.5">
                 Failed to load editor
               </div>
-              <pre>{loadError}</pre>
+              <pre className="bg-transparent text-[#7f1d1d] p-0 m-0 text-xs">
+                {loadError}
+              </pre>
             </div>
           ) : Excalidraw && initialData ? (
             <Excalidraw
@@ -159,7 +173,7 @@ export function DrawingEditorModal({
               }}
             />
           ) : (
-            <div className="sb-drawing-modal__loading">
+            <div className="flex items-center justify-center h-full text-muted-foreground text-[13px]">
               Loading editor…
             </div>
           )}

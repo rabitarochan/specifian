@@ -19,6 +19,10 @@
  * Keys not in schema.properties are rendered at the bottom as "Extra fields" via
  * inferSchema so they survive round-trips.
  */
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { JsonSchema } from './schemaTypes';
 import { primaryType } from './schemaTypes';
 import { inferSchema } from './infer';
@@ -47,7 +51,7 @@ interface SchemaFormProps {
 /** Top-level: expand as an object */
 export function SchemaForm({ schema, value, onChange }: SchemaFormProps) {
   return (
-    <div className="sb-schema-form">
+    <div className="flex flex-col gap-4">
       <ObjectFields schema={schema} value={value} onChange={onChange} />
     </div>
   );
@@ -92,8 +96,10 @@ function ObjectFields({
       ))}
 
       {extraSchema && (
-        <div className="sb-schema-extra">
-          <div className="sb-schema-extra__divider">Extra fields</div>
+        <div className="flex flex-col gap-4 mt-1 pt-4 border-t border-dashed border-input">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+            Extra fields
+          </div>
           {outsideKeys.map((key) => (
             <Field
               key={key}
@@ -130,13 +136,13 @@ function Field({
   // object → nested fieldset
   if (t === 'object') {
     return (
-      <fieldset className="sb-fieldset">
-        <legend className="sb-fieldset__legend">
+      <fieldset className="border border-border rounded-lg px-3.5 pt-0 pb-3.5 m-0 bg-muted flex flex-col gap-3.5">
+        <legend className="text-[13px] font-bold text-foreground px-1.5 inline-flex items-center gap-2">
           {label}
           {required && <RequiredStar />}
         </legend>
         {schema.description && (
-          <p className="sb-field__hint">{schema.description}</p>
+          <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
         )}
         <ObjectFields
           schema={schema}
@@ -155,10 +161,10 @@ function Field({
     // array of all-scalar object → table
     if (isAllScalarObject(items)) {
       return (
-        <div className="sb-field">
+        <div className="flex flex-col gap-[5px]">
           <FieldLabel label={label} required={required} />
           {schema.description && (
-            <p className="sb-field__hint">{schema.description}</p>
+            <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
           )}
           <ObjectArrayTable
             schema={schema}
@@ -172,10 +178,10 @@ function Field({
     // array of scalar → list of input rows
     if (isScalarType(itemType)) {
       return (
-        <div className="sb-field">
+        <div className="flex flex-col gap-[5px]">
           <FieldLabel label={label} required={required} />
           {schema.description && (
-            <p className="sb-field__hint">{schema.description}</p>
+            <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
           )}
           <ScalarArray
             items={items}
@@ -188,10 +194,10 @@ function Field({
 
     // array of nested object (or unknown) → list of fieldsets
     return (
-      <div className="sb-field">
+      <div className="flex flex-col gap-[5px]">
         <FieldLabel label={label} required={required} />
         {schema.description && (
-          <p className="sb-field__hint">{schema.description}</p>
+          <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
         )}
         <ObjectArrayList
           items={items}
@@ -206,8 +212,8 @@ function Field({
   if (isScalarType(t)) {
     if (t === 'boolean') {
       return (
-        <div className="sb-field sb-field--inline">
-          <label className="sb-checkbox-label">
+        <div className="flex flex-col gap-[5px]">
+          <label className="inline-flex items-center gap-2 cursor-pointer">
             <ScalarControl
               schema={schema}
               value={value}
@@ -215,19 +221,19 @@ function Field({
               onChange={onChange}
               ariaLabel={label}
             />
-            <span className="sb-field__label">
+            <span className="text-[13px] font-semibold text-foreground">
               {label}
               {required && <RequiredStar />}
             </span>
           </label>
           {schema.description && (
-            <p className="sb-field__hint">{schema.description}</p>
+            <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
           )}
         </div>
       );
     }
     return (
-      <div className="sb-field">
+      <div className="flex flex-col gap-[5px]">
         <FieldLabel label={label} required={required} />
         <ScalarControl
           schema={schema}
@@ -237,7 +243,7 @@ function Field({
           ariaLabel={label}
         />
         {schema.description && (
-          <p className="sb-field__hint">{schema.description}</p>
+          <p className="text-[12px] text-muted-foreground m-0">{schema.description}</p>
         )}
       </div>
     );
@@ -245,12 +251,15 @@ function Field({
 
   // Unknown/unsupported → read-only JSON fallback (value preserved)
   return (
-    <div className="sb-field">
+    <div className="flex flex-col gap-[5px]">
       <FieldLabel label={label} required={required} />
-      <pre className="sb-json-fallback" aria-label={`${label} (read-only)`}>
+      <pre
+        className="font-mono text-[12px] bg-muted border border-border rounded-md px-2.5 py-2 m-0 overflow-x-auto text-muted-foreground whitespace-pre-wrap"
+        aria-label={`${label} (read-only)`}
+      >
         {safeStringify(value)}
       </pre>
-      <p className="sb-field__hint">
+      <p className="text-[12px] text-muted-foreground m-0">
         This type cannot be edited in the form. Use the Text tab to edit it.
       </p>
     </div>
@@ -284,9 +293,9 @@ function ScalarArray({
   };
 
   return (
-    <div className="sb-scalar-array">
+    <div className="flex flex-col gap-1.5">
       {values.map((v, i) => (
-        <div className="sb-scalar-array__row" key={i}>
+        <div className="flex items-center gap-1.5" key={i}>
           <ScalarControl
             schema={items}
             value={v}
@@ -294,17 +303,26 @@ function ScalarArray({
             onChange={(next) => updateAt(i, next)}
             ariaLabel={`Item ${i + 1}`}
           />
-          <button
+          <Button
             type="button"
-            className="sb-row-btn sb-row-btn--danger"
+            variant="ghost"
+            size="icon"
             aria-label="Delete"
+            className={cn(
+              'shrink-0',
+              'hover:bg-destructive/10 hover:text-destructive',
+            )}
             onClick={() => removeAt(i)}
           >
-            Delete
-          </button>
+            <Trash2 />
+          </Button>
         </div>
       ))}
-      <button type="button" className="sb-link-btn" onClick={add}>
+      <button
+        type="button"
+        className="font-[inherit] border-none bg-transparent text-primary cursor-pointer px-1 underline text-left w-fit"
+        onClick={add}
+      >
         + Add
       </button>
     </div>
@@ -345,38 +363,45 @@ function ObjectArrayList({
   };
 
   return (
-    <div className="sb-object-list">
+    <div className="flex flex-col gap-2.5">
       {values.map((v, i) => (
-        <fieldset className="sb-fieldset sb-fieldset--item" key={i}>
-          <legend className="sb-fieldset__legend">
+        <fieldset
+          className="border border-border rounded-lg px-3.5 pt-0 pb-3.5 m-0 bg-background flex flex-col gap-3.5"
+          key={i}
+        >
+          <legend className="text-[13px] font-bold text-foreground px-1.5 inline-flex items-center gap-2">
             #{i + 1}
-            <span className="sb-fieldset__actions">
-              <button
+            <span className="inline-flex gap-0.5">
+              <Button
                 type="button"
-                className="sb-row-btn"
+                variant="ghost"
+                size="icon"
                 aria-label="Move up"
                 disabled={i === 0}
                 onClick={() => move(i, -1)}
               >
-                ↑
-              </button>
-              <button
+                <ArrowUp />
+              </Button>
+              <Button
                 type="button"
-                className="sb-row-btn"
+                variant="ghost"
+                size="icon"
                 aria-label="Move down"
                 disabled={i === values.length - 1}
                 onClick={() => move(i, 1)}
               >
-                ↓
-              </button>
-              <button
+                <ArrowDown />
+              </Button>
+              <Button
                 type="button"
-                className="sb-row-btn sb-row-btn--danger"
+                variant="ghost"
+                size="icon"
                 aria-label="Delete"
+                className="hover:bg-destructive/10 hover:text-destructive"
                 onClick={() => removeAt(i)}
               >
-                Delete
-              </button>
+                <Trash2 />
+              </Button>
             </span>
           </legend>
           <ObjectFields
@@ -386,7 +411,11 @@ function ObjectArrayList({
           />
         </fieldset>
       ))}
-      <button type="button" className="sb-link-btn" onClick={add}>
+      <button
+        type="button"
+        className="font-[inherit] border-none bg-transparent text-primary cursor-pointer px-1 underline text-left w-fit"
+        onClick={add}
+      >
         + Add
       </button>
     </div>
@@ -395,7 +424,7 @@ function ObjectArrayList({
 
 function FieldLabel({ label, required }: { label: string; required: boolean }) {
   return (
-    <span className="sb-field__label">
+    <span className="text-[13px] font-semibold text-foreground">
       {label}
       {required && <RequiredStar />}
     </span>
@@ -404,7 +433,7 @@ function FieldLabel({ label, required }: { label: string; required: boolean }) {
 
 function RequiredStar() {
   return (
-    <span className="sb-required" aria-label="Required">
+    <span className="text-destructive font-bold" aria-label="Required">
       {' '}
       *
     </span>

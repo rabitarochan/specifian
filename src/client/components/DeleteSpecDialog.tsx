@@ -6,6 +6,7 @@ import { deleteSpecById, fetchRefs, ApiHttpError } from '../api';
 import { useSpecs } from './SpecsProvider';
 import { useToast } from './Toast';
 import { parseSpecId } from '@shared/types';
+import { Button } from '@/components/ui/button';
 
 interface Props {
   /** ID of the spec to delete ("category:slug") */
@@ -74,53 +75,59 @@ export function DeleteSpecDialog({ specId, onClose }: Props) {
 
   return (
     <Modal title="Delete Spec" onClose={onClose}>
-      <div className="sb-form">
-        <p style={{ margin: 0 }}>
-          Delete spec <span className="sb-id-badge">{specId}</span>?
+      <div className="flex flex-col gap-3.5">
+        <p className="m-0">
+          Delete spec{' '}
+          <span className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-1.5 py-0.5">
+            {specId}
+          </span>
+          ?
         </p>
 
         {loading && (
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: 0 }}>
+          <p className="text-muted-foreground text-[13px] m-0">
             Checking references…
           </p>
         )}
 
         {refsError && (
-          <p style={{ color: 'var(--danger)', fontSize: 13, margin: 0 }}>
+          <p className="text-destructive text-[13px] m-0">
             Failed to fetch references: {refsError}
           </p>
         )}
 
         {refs !== null && refs.length > 0 && (
-          <div className="sb-delete-warning">
-            <strong className="sb-delete-warning__title">
+          <div className="border border-[#fde68a] bg-[#fffbeb] rounded-lg px-3.5 py-2.5 text-[#92400e] text-[13.5px]">
+            <strong className="block font-semibold mb-1.5">
               This spec is referenced by {refs.length} other spec{refs.length !== 1 ? 's' : ''}.
               Deleting it will break those links:
             </strong>
-            <ul className="sb-delete-warning__list">
+            <ul className="m-0 pl-[1.2em] flex flex-col gap-1">
               {refs.map((r) => (
                 <li key={r}>
-                  <span className="sb-id-badge">{r}</span>
+                  <span className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-1.5 py-0.5">
+                    {r}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {error && <p className="sb-form__error">{error}</p>}
+        {error && <p className="text-destructive text-[13px] m-0">{error}</p>}
 
-        <div className="sb-form__actions">
-          <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="sb-btn sb-btn--danger"
+            variant="destructive"
             onClick={() => void doDelete()}
             disabled={busy || loading}
           >
             {busy ? 'Deleting…' : 'Delete'}
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>

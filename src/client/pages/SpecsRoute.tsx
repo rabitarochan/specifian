@@ -2,15 +2,16 @@
  * Dispatcher for the `/specs/*` splat route.
  * Treats the last segment of the splat as a slug candidate:
  *  1. GET /api/specs/<splat> succeeds → SpecPage
- *  2. 404 → treat as category, CategoryIndexPage (<splat> = full category path)
+ *  2. 404 → treat as category, IndexPage (<splat> = full category path)
  * Checks specs list for an ID match first to avoid unnecessary requests.
  */
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { fetchSpecByPath, ApiHttpError } from '../api';
 import { useSpecs } from '../components/SpecsProvider';
+import { Loading } from '../components/Page';
 import { SpecPage } from './SpecPage';
-import { CategoryIndexPage } from './CategoryIndexPage';
+import { IndexPage } from './IndexPage';
 
 type Resolved =
   | { kind: 'spec'; category: string; slug: string; specId: string }
@@ -76,7 +77,7 @@ export function SpecsRoute() {
   }, [splat, specs]);
 
   if (resolved.kind === 'loading') {
-    return <div className="sb-loading">Loading…</div>;
+    return <Loading />;
   }
   if (resolved.kind === 'spec') {
     return (
@@ -88,5 +89,5 @@ export function SpecsRoute() {
       />
     );
   }
-  return <CategoryIndexPage key={resolved.category} category={resolved.category} />;
+  return <IndexPage key={resolved.category} category={resolved.category} />;
 }

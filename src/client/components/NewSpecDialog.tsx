@@ -2,6 +2,9 @@
 import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { createSpec, ApiHttpError } from '../api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Props {
   category: string;
@@ -45,34 +48,34 @@ export function NewSpecDialog({ category, onClose, onCreated }: Props) {
 
   return (
     <Modal title={`Add spec (${category})`} onClose={onClose}>
-      <form onSubmit={submit} className="sb-form">
-        <label className="sb-field">
-          <span className="sb-field__label">Slug (filename)</span>
-          <input
-            className="sb-input"
+      <form onSubmit={submit} className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="new-spec-slug">Slug (filename)</Label>
+          <Input
+            id="new-spec-slug"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="users"
             autoFocus
           />
-        </label>
-        <label className="sb-field">
-          <span className="sb-field__label">Title (optional)</span>
-          <input
-            className="sb-input"
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="new-spec-title">Title (optional)</Label>
+          <Input
+            id="new-spec-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Users"
           />
-        </label>
-        {error && <p className="sb-form__error">{error}</p>}
-        <div className="sb-form__actions">
-          <button type="button" className="sb-btn" onClick={onClose} disabled={busy}>
+        </div>
+        {error && <p className="text-destructive text-[13px] m-0">{error}</p>}
+        <div className="flex justify-end gap-2 mt-1">
+          <Button type="button" variant="outline" onClick={onClose} disabled={busy}>
             Cancel
-          </button>
-          <button type="submit" className="sb-btn sb-btn--primary" disabled={busy}>
+          </Button>
+          <Button type="submit" disabled={busy}>
             Create
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

@@ -1,37 +1,37 @@
 /** Displays an object or array as a collapsible, formatted JSON view. */
 
 function Primitive({ value }: { value: unknown }) {
-  if (value === null) return <span className="sb-json-null">null</span>;
+  if (value === null) return <span className="text-muted-foreground">null</span>;
   switch (typeof value) {
     case 'string':
-      return <span className="sb-json-string">"{value}"</span>;
+      return <span className="text-[#16a34a]">"{value}"</span>;
     case 'number':
-      return <span className="sb-json-number">{value}</span>;
+      return <span className="text-[#ca8a04]">{value}</span>;
     case 'boolean':
-      return <span className="sb-json-boolean">{String(value)}</span>;
+      return <span className="text-[#9333ea]">{String(value)}</span>;
     default:
-      return <span className="sb-json-null">{String(value)}</span>;
+      return <span className="text-muted-foreground">{String(value)}</span>;
   }
 }
 
 function Node({ name, value }: { name?: string; value: unknown }) {
-  const label = name !== undefined ? <span className="sb-json-key">{name}: </span> : null;
+  const label = name !== undefined ? <span className="text-primary">{name}: </span> : null;
 
   if (Array.isArray(value)) {
     if (value.length === 0)
       return (
-        <div className="sb-json-row">
+        <div className="pl-4">
           {label}
-          <span className="sb-json-bracket">[]</span>
+          <span className="text-muted-foreground">[]</span>
         </div>
       );
     return (
-      <details className="sb-json-node" open>
+      <details className="ml-0 [&>summary]:cursor-pointer [&>summary]:list-item" open>
         <summary>
           {label}
-          <span className="sb-json-bracket">[{value.length}]</span>
+          <span className="text-muted-foreground">[{value.length}]</span>
         </summary>
-        <div className="sb-json-children">
+        <div className="ml-1 border-l border-border pl-4">
           {value.map((v, i) => (
             <Node key={i} name={String(i)} value={v} />
           ))}
@@ -44,18 +44,18 @@ function Node({ name, value }: { name?: string; value: unknown }) {
     const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0)
       return (
-        <div className="sb-json-row">
+        <div className="pl-4">
           {label}
-          <span className="sb-json-bracket">{'{}'}</span>
+          <span className="text-muted-foreground">{'{}'}</span>
         </div>
       );
     return (
-      <details className="sb-json-node" open>
+      <details className="ml-0 [&>summary]:cursor-pointer [&>summary]:list-item" open>
         <summary>
           {label}
-          <span className="sb-json-bracket">{'{…}'}</span>
+          <span className="text-muted-foreground">{'{…}'}</span>
         </summary>
-        <div className="sb-json-children">
+        <div className="ml-1 border-l border-border pl-4">
           {entries.map(([k, v]) => (
             <Node key={k} name={k} value={v} />
           ))}
@@ -65,7 +65,7 @@ function Node({ name, value }: { name?: string; value: unknown }) {
   }
 
   return (
-    <div className="sb-json-row">
+    <div className="pl-4">
       {label}
       <Primitive value={value} />
     </div>
@@ -74,7 +74,7 @@ function Node({ name, value }: { name?: string; value: unknown }) {
 
 export function DataView({ data }: { data?: unknown }) {
   return (
-    <div className="sb-dataview">
+    <div className="my-4 rounded-lg border border-border bg-muted px-3.5 py-3 font-mono text-[13px] leading-[1.6]">
       <Node value={data} />
     </div>
   );
